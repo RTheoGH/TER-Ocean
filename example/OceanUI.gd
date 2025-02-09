@@ -23,9 +23,9 @@ func _process(_delta):
 	ocean_fps_view.text = "%.1f Ocean TPS" % [fps / (ocean.ocean.simulation_frameskip + 1)]
 	
 	if not _debug_textures_initialized and ocean.ocean.initialized:
-		displacement_cascade0_view.texture = ocean.ocean.get_waves_texture(0)
-		displacement_cascade1_view.texture = ocean.ocean.get_waves_texture(1)
-		displacement_cascade2_view.texture = ocean.ocean.get_waves_texture(2)
+		displacement_cascade0_view.texture = ocean.ocean.get_waves_texture()
+		#displacement_cascade1_view.texture = ocean.ocean.get_waves_texture(1)
+		#displacement_cascade2_view.texture = ocean.ocean.get_waves_texture(2)
 		_debug_textures_initialized = true
 
 

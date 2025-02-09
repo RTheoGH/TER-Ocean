@@ -77,15 +77,15 @@ func _ready() -> void:
 	if splash_particles != null:
 		splash_particles.process_material.set_shader_parameter("view_distance_max", camera.far)
 		splash_particles.process_material.set_shader_parameter("wind_uv_offset", ocean.wind_uv_offset)
-		splash_particles.process_material.set_shader_parameter("cascade_uv_scales", ocean.cascade_scales)
-		splash_particles.process_material.set_shader_parameter("cascade_displacements", ocean.get_all_waves_textures())
+		splash_particles.process_material.set_shader_parameter("cascade_uv_scales", ocean.cascade_scale)
+		splash_particles.process_material.set_shader_parameter("cascade_displacements", ocean.get_waves_texture())
 		splash_particles.process_material.set_shader_parameter("uv_scale", ocean._uv_scale)
 		
 		if splash_sub_particles != null:
 			splash_sub_particles.process_material.set_shader_parameter("view_distance_max", camera.far)
 			splash_sub_particles.process_material.set_shader_parameter("wind_uv_offset", ocean.wind_uv_offset)
-			splash_sub_particles.process_material.set_shader_parameter("cascade_uv_scales", ocean.cascade_scales)
-			splash_sub_particles.process_material.set_shader_parameter("cascade_displacements", ocean.get_all_waves_textures())
+			splash_sub_particles.process_material.set_shader_parameter("cascade_uv_scales", ocean.cascade_scale)
+			splash_sub_particles.process_material.set_shader_parameter("cascade_displacements", ocean.get_waves_texture())
 			splash_sub_particles.process_material.set_shader_parameter("uv_scale", ocean._uv_scale)
 
 
