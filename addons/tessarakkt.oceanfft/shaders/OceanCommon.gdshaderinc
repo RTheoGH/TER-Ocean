@@ -25,6 +25,7 @@ uniform vec2 wind_uv_offset = vec2(0.0, 0.0);
 // Updated with each call to Ocean3D.simulate()
 uniform sampler2D cascade_displacements;
 
+
 // The maximum distance from the camera a fragment can be visible. Beyond this
 // distance the fragment will have ALPHA = 0.0
 // This is set on initialization only by Quadtree3D._ready()
@@ -52,15 +53,60 @@ uniform sampler2D domain_warp_texture;
 
 group_uniforms;
 
+vec2 hash ( vec2 p)
+{
+return fract ( sin (( p ) * mat2 (vec2(127.1 , 311.7 ),vec2( 269.5 , 183.3)))*43758.5453) ;
+}
+
+void TriangleGrid ( vec2 uv ,out float w1 , out float w2 , out float w3 ,out ivec2 vertex1 , out ivec2 vertex2 , out ivec2 vertex3 ){
+	// Scaling of the input
+	uv *= 3.464; // 2 * sqrt (3)
+	// Skew input space into simplex triangle grid
+	const mat2 gridToSkewedGrid = mat2 (vec2(1.0 , 0.0) ,vec2( -0.57735027 , 1.15470054)) ;
+	vec2 skewedCoord = gridToSkewedGrid * uv ;
+	// Compute local triangle vertex IDs and local barycentric coordinates
+	ivec2 baseId = ivec2 ( floor ( skewedCoord ));
+	vec3 temp = vec3 ( fract ( skewedCoord ) , 0) ;
+	temp .z = 1.0 - temp . x - temp .y;
+	if ( temp . z > 0.0){
+		w1 = temp .z;
+		w2 = temp .y;
+		w3 = temp .x;
+		vertex1 = baseId ;
+		vertex2 = baseId + ivec2 (0 , 1) ;
+		vertex3 = baseId + ivec2 (1 , 0) ;
+	}
+	else{
+		w1 = - temp .z ;
+		w2 = 1.0 - temp .y;
+		w3 = 1.0 - temp .x;
+	vertex1 = baseId + ivec2 (1 , 1) ;
+	vertex2 = baseId + ivec2 (1 , 0) ;
+	vertex3 = baseId + ivec2 (0 , 1) ;
+	}
+}
 
 // Get the total wave displacement of a vertex from all cascades.
 vec3 get_displacement(vec2 uv) {
-	vec3 displacement = vec3(0.0);
+	// Get triangle info
+	float w1 , w2 , w3 ;
+	ivec2 vertex1 , vertex2 , vertex3 ;
+	TriangleGrid (uv , w1 , w2 , w3 , vertex1 , vertex2 , vertex3 );
+	// Assign random offset to each triangle vertex
+	vec2 uv1 = uv + hash ( vec2(vertex1) );
+	vec2 uv2 = uv + hash ( vec2(vertex2) );
+	vec2 uv3 = uv + hash ( vec2(vertex3) );
+	// Precompute UV derivatives
+	vec2 duvdx = vec2(uv.x + 0.001, uv.y) - uv;
+	vec2 duvdy = vec2(uv.x, uv.y + 0.001) - uv;
 
-		displacement += texture(cascade_displacements,
-				uv * uv_scale * (1.0 / cascade_uv_scales) + wind_uv_offset * cascade_uv_scales).rgb;
-	
-	return displacement;
+	// Fetch input
+	vec3 I1 = textureGrad ( cascade_displacements , uv1 , duvdx , duvdy ). rgb ;
+	vec3 I2 = textureGrad ( cascade_displacements , uv2 , duvdx , duvdy ). rgb ;
+	vec3 I3 = textureGrad ( cascade_displacements , uv3 , duvdx , duvdy ). rgb ;
+	// Linear blending
+	vec3 color = w1 * I1 + w2 * I2 + w3 * I3 ;
+	return color ;
 }
 
 
@@ -70,19 +116,19 @@ vec3 get_displacement(vec2 uv) {
 vec4 get_normals_jacobian(vec2 uv, vec3 displacement) {
 	// Surface Normals
 	float offset = 1.0;
-	
+
 	vec3 right = (vec3(offset, get_displacement(uv + vec2(offset, 0.0)).y, 0.0)) - displacement;
 	vec3 left = (vec3(-offset, get_displacement(uv + vec2(-offset, 0.0)).y, 0.0)) - displacement;
 	vec3 bottom = (vec3(0.0, get_displacement(uv + vec2(0.0, offset)).y, offset)) - displacement;
 	vec3 top = (vec3(0.0, get_displacement(uv + vec2(0.0, -offset)).y, -offset)) - displacement;
-	
+
 	vec3 top_right = cross(right, top);
 	vec3 top_left = cross(top, left);
 	vec3 bottom_left = cross(left, bottom);
 	vec3 bottom_right = cross(bottom, right);
-	
+
 	vec3 normal = normalize(top_right + top_left + bottom_left + bottom_right) * normal_factor;
-	
+
 	// Jacobian Determinant
 	// Used for foam/whitecap rendering
 	float jxx = right.x / offset;
@@ -90,7 +136,7 @@ vec4 get_normals_jacobian(vec2 uv, vec3 displacement) {
 	float jyx = bottom.x / offset;
 	float jyy = bottom.y / offset;
 	float jacobian_determinant = (jxx * jyy) - (jxy * jyx);
-	
+
 	return vec4(normal, jacobian_determinant);
 }
 
@@ -102,8 +148,8 @@ vec2 domain_warp(vec2 uv, float linear_dist) {
 	vec2 domain_warp = vec2(
 			texture(domain_warp_texture, uv * domain_warp_uv_scale).r,
 			texture(domain_warp_texture, -uv * domain_warp_uv_scale).r);
-	
+
 	domain_warp *= domain_warp_strength * (linear_dist / view_distance_max);
-	
+
 	return uv + domain_warp;
 }
