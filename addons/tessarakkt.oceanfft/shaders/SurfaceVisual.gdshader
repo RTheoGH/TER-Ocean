@@ -146,7 +146,7 @@ void vertex() {
 	
 	// Vertex Offset
 	// Use the world vertex XZ coordinates as UV for simplicity
-	vec3 displacement = get_displacement(domain_warped_uv);
+	vec3 displacement = get_displacement(domain_warped_uv) ;//+ get_displacement(domain_warped_uv);
 	VERTEX += displacement;
 	world_vertex = VERTEX;
 	

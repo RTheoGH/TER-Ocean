@@ -16,7 +16,7 @@ enum Binding {
 	PONG = 26,
 	INPUT = 27,
 	OUTPUT = 28,
-	DISPLACEMENT = 30,
+	TB_DISPLACEMENT = 29
 }
 
 
@@ -231,8 +231,20 @@ var _fft_settings_uniform := RDUniform.new()
 var _sub_pong_uniform := RDUniform.new()
 var _sub_pong_tex:RID
 
+var _tb_shader:RID
+var _tb_pipeline:RID
+var _tb_settings_buffer:RID
+var _tb_settings_uniform := RDUniform.new()
+var _tb_uniform:RDUniform
+
 var _waves_image:Image
 var _waves_texture:Texture2DRD
+
+var _tb_waves_image:Image
+var _tb_waves_texture:Texture2DRD
+
+var _tb_waves_uniform:RDUniform
+var _tb_waves_tex:RID
 
 var _is_ping_phase := true
 
@@ -386,6 +398,10 @@ func get_waves() -> Image:
 func get_waves_texture() -> Texture2DRD:
 	assert(initialized, "Ocean3D not initialized")
 	return _waves_texture
+
+func get_tb_waves_texture() -> Texture2DRD:
+	assert(initialized, "Ocean3D not initialized")
+	return _tb_waves_texture
 
 
 
@@ -554,14 +570,28 @@ func _initialize_simulation() -> void:
 	_spectrum_uniform.binding = Binding.SPECTRUM
 	_spectrum_uniform.add_id(_spectrum_tex)
 	
+	## on initialise la texture a 0 
+	_tb_waves_tex = _rd.texture_create(_fmt_rg32f,  RDTextureView.new(), [initial_image_rgf.get_data()])
+	_tb_waves_uniform = RDUniform.new()
+	_tb_waves_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_IMAGE
+	_tb_waves_uniform.binding = Binding.OUTPUT
+	_tb_waves_uniform.add_id(_tb_waves_tex)
+	
 	## Bind the displacement map cascade texture to the visual shader
 	_waves_image = Image.create(fft_resolution, fft_resolution, false, Image.FORMAT_RGF)
 	_waves_texture = Texture2DRD.new()
 	_waves_texture.texture_rd_rid = _spectrum_tex
 	
+	_tb_waves_image = Image.create(fft_resolution, fft_resolution, false, Image.FORMAT_RGF)
+	_tb_waves_texture = Texture2DRD.new()
+	_tb_waves_texture.texture_rd_rid = _tb_waves_tex
+	
+	
 	material.set_shader_parameter("cascade_displacements", _waves_texture)
 	material.set_shader_parameter("cascade_uv_scales", cascade_scale)
 	material.set_shader_parameter("uv_scale", _uv_scale)
+	
+	material.set_shader_parameter("tb_displacement_map", _tb_waves_image)
 	
 	#### Compile & Initialize FFT Shaders
 	############################################################################
@@ -782,8 +812,70 @@ func _simulate(delta:float, sync_heightmap:bool) -> void:
 		
 		## Retrieve the displacement map from the Spectrum texture, and store it
 		## CPU side for use by buoyancy and wave interaction systems.
+		
+		
+		#### Compile & Initialize Tiling and Blending Shader
+		############################################################################
+		## This shader blends the displacement maps to create a seamless tiling effect.
+
+		## Compile Shader
+		var shader_file = load("res://addons/tessarakkt.oceanfft/shaders/TilingAndBlending.glsl")
+		_tb_shader = _rd.shader_create_from_spirv(shader_file.get_spirv())
+		_tb_pipeline = _rd.compute_pipeline_create(_tb_shader)
+
+		_tb_waves_uniform.binding = Binding.OUTPUT
+		_spectrum_uniform.binding = Binding.INPUT
+
+		## Build Uniform Set
+		uniform_set = _rd.uniform_set_create([
+				_spectrum_uniform,
+				_tb_waves_uniform], _tb_shader, UNIFORM_SET)
+
+		## Create Compute List
+		compute_list = _rd.compute_list_begin()
+		_rd.compute_list_bind_compute_pipeline(compute_list, _tb_pipeline)
+		_rd.compute_list_bind_uniform_set(compute_list, uniform_set, UNIFORM_SET)
+		@warning_ignore("integer_division")
+		_rd.compute_list_dispatch(compute_list, fft_resolution / WORK_GROUP_DIM, fft_resolution / WORK_GROUP_DIM, 1)
+		_rd.compute_list_end()
+
+		_rd.free_rid(uniform_set)
+
+		## Retrieve the displacement map from the Spectrum texture, and store it
+		## CPU side for use by buoyancy and wave interaction systems.
+		
+		
+		#### Compile & Initialize Tiling and Blending Shader
+		############################################################################
+		## This shader blends the displacement maps to create a seamless tiling effect.
+
+		## Compile Shader
+		shader_file = load("res://addons/tessarakkt.oceanfft/shaders/CopyTexture.glsl")
+		var copy_shader = _rd.shader_create_from_spirv(shader_file.get_spirv())
+		var copy_pipeline = _rd.compute_pipeline_create(copy_shader)
+
+		_tb_waves_uniform.binding = Binding.INPUT
+		_spectrum_uniform.binding = Binding.OUTPUT
+
+		## Build Uniform Set
+		uniform_set = _rd.uniform_set_create([
+				_tb_waves_uniform,
+				_spectrum_uniform], _tb_shader, UNIFORM_SET)
+
+		## Create Compute List
+		compute_list = _rd.compute_list_begin()
+		_rd.compute_list_bind_compute_pipeline(compute_list, copy_pipeline)
+		_rd.compute_list_bind_uniform_set(compute_list, uniform_set, UNIFORM_SET)
+		@warning_ignore("integer_division")
+		_rd.compute_list_dispatch(compute_list, fft_resolution / WORK_GROUP_DIM, fft_resolution / WORK_GROUP_DIM, 1)
+		_rd.compute_list_end()
+
+		_rd.free_rid(uniform_set)
+		
 		if sync_heightmap:
+
 			_waves_image.set_data(fft_resolution, fft_resolution, false, Image.FORMAT_RGF, _rd.texture_get_data(_spectrum_tex, 0))
-	
+			_tb_waves_image.set_data(fft_resolution, fft_resolution, false, Image.FORMAT_RGF, _rd.texture_get_data(_tb_waves_tex, 0))
+			
 	## This needs to get updated outside the cascade iteration loop
 	_is_ping_phase = not _is_ping_phase

@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://3cmrkpnq3jl"
+path="res://.godot/imported/TilingAndBlending.glsl-1fcdd863041e6e72c152ad4c7472b29f.res"
+
+[deps]
+
+source_file="res://addons/tessarakkt.oceanfft/shaders/TilingAndBlending.glsl"
+dest_files=["res://.godot/imported/TilingAndBlending.glsl-1fcdd863041e6e72c152ad4c7472b29f.res"]
+
+[params]
+
