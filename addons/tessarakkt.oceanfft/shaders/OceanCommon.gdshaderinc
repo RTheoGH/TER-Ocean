@@ -64,10 +64,115 @@ vec3 get_displacement(vec2 uv) {
 }
 
 
+//TODO : Make the triangle grid
+//currently copy paste
+//Source : https://eheitzresearch.wordpress.com/738-2/
+void TriangleGrid(vec2 uv ,
+	out float w1, out float w2, out float w3,
+	out ivec2 vertex1, out ivec2 vertex2, out ivec2 vertex3){
+
+	// Scaling of the input
+	uv *= 3.464; // 2 * sqrt(3)
+
+	// Skew input space into simplex triangle grid
+	const mat2 gridToSkewedGrid = mat2(vec2(1.0, 0.0), vec2(-0.57735027, 1.15470054));
+	vec2 skewedCoord = gridToSkewedGrid * uv;
+
+	// Compute local triangle vertex IDs and local barycentric coordinates
+	ivec2 baseId = ivec2(floor(skewedCoord));
+	vec3 temp = vec3(fract(skewedCoord), 0);
+	temp.z = 1.0 - temp.x - temp.y;
+	if (temp.z > 0.0)
+	{
+		w1 = temp.z;
+		w2 = temp.y;	
+		w3 = temp.x;
+		vertex1 = baseId;
+		vertex2 = baseId + ivec2(0, 1);
+		vertex3 = baseId + ivec2(1, 0);
+	}
+	else
+	{
+		w1 = 1.0 - temp.z;
+		w2 = 1.0 - temp.y;
+		w3 = 1.0 - temp.x;
+		vertex1 = baseId + ivec2(1, 1);
+		vertex2 = baseId + ivec2(1, 0);
+		vertex3 = baseId + ivec2(0, 1);
+	}
+}
+
+//Source : https://eheitzresearch.wordpress.com/738-2/
+//currently copy paste
+vec2 hash_tb(vec2 p)
+{
+	return fract(sin((p) * mat2(vec2(127.1, 311.7), vec2(269.5, 183.3)) )*43758.5453);
+}
+
+//TODO : test it out idk
+//Source : https://eheitzresearch.wordpress.com/738-2/
+//currently copy paste
+// By-Example procedural noise at uv
+vec3 ProceduralTilingAndBlending(vec2 uv)
+{
+	// Get triangle info
+	float w1, w2, w3;
+	ivec2 vertex1, vertex2, vertex3;
+	TriangleGrid(uv, w1, w2, w3, vertex1, vertex2, vertex3);
+	// w1 = 1.0;
+	// w2 = 0.0;
+	// w3 = 0.0;
+
+	// Assign random offset to each triangle vertex
+	vec2 uv1 = uv + hash_tb(vec2(vertex1));
+	vec2 uv2 = uv + hash_tb(vec2(vertex2));
+	vec2 uv3 = uv + hash_tb(vec2(vertex3));
+	// Precompute UV derivatives
+	
+	//Commented to do without anistropic filter
+	// vec2 duvdx = dFdx(uv);
+	// vec2 duvdy = dFdy(uv);
+	// Fetch input
+	// vec3 I1 = textureGrad(input, uv1, duvdx, duvdy).rgb;
+	// vec3 I2 = textureGrad(input, uv2, duvdx, duvdy).rgb;
+	// vec3 I3 = textureGrad(input, uv3, duvdx, duvdy).rgb;
+	
+	vec3 I1 = texture(cascade_displacements , uv1).rgb;
+	vec3 I2 = texture(cascade_displacements , uv2).rgb;
+	vec3 I3 = texture(cascade_displacements , uv3).rgb;
+	// Linear blending
+	vec3 color = w1 * I1 + w2 * I2 + w3 * I3;
+	return color;
+}
+
+//FIXME
+vec3 get_displacement_tiling_blending(vec2 uv){
+	vec3 displacement = vec3(0.0);
+	float mu_D = textureLod(cascade_displacements, vec2(0.5), 5.0).r;
+	displacement += ProceduralTilingAndBlending(uv) - mu_D + mu_D;
+	return displacement;
+}
+
+//TODO : calculate normals for tb
+// Calculate normals using pre-filtered normals and normalize the result
+vec4 get_normals_tb(vec2 uv , vec3 displacement) {
+    // Fetch pre-filtered normals from the lowest resolution MIP-map (mean normal)
+    vec4 mean_normal = textureLod(cascade_displacements, uv, 5.0); // Adjust mip level as needed
+
+    // Apply Equation (6) from the paper
+    vec4 normals = vec4(displacement, 1.0) - mean_normal;
+    
+    // Normalize the final normal
+    normals = normalize(normals + mean_normal);
+
+    return normals;
+}
+
+
 // Calculate surface normals and Jacobian determinant for a given coordinate.
 // The normal will be packed in the XYZ channels, and the Jacobian determinant
 // will be packed in the W channel.
-vec4 get_normals_jacobian(vec2 uv, vec3 displacement) {
+vec4 get_normals_jacobian(vec2 uv, vec3 displacement){
 	// Surface Normals
 	float offset = 1.0;
 	

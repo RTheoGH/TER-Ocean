@@ -146,12 +146,12 @@ void vertex() {
 	
 	// Vertex Offset
 	// Use the world vertex XZ coordinates as UV for simplicity
-	vec3 displacement = get_displacement(domain_warped_uv);
+	vec3 displacement = get_displacement_tiling_blending(domain_warped_uv);
 	VERTEX += displacement;
 	world_vertex = VERTEX;
 	
 	// Surface Normals & Jacobian
-	vec4 nj = get_normals_jacobian(domain_warped_uv, displacement);
+	vec4 nj = get_normals_tb(domain_warped_uv, displacement);
 	NORMAL = nj.xyz * normal_factor;
 	jacobian_determinant = nj.w;
 	

@@ -109,7 +109,7 @@ void start() {
 		// crest via Jacobian.
 		vec3 displacement = get_displacement(domain_warped_uv);
 		TRANSFORM[3].xyz += displacement;
-		vec4 nj = get_normals_jacobian(domain_warped_uv, displacement);
+		vec4 nj = get_normals_tb(domain_warped_uv, displacement);
 		
 		float splash_value = clamp((-nj.w + splash_jacobian_limit) * splash_coverage, 0.0, 1.0);
 		
@@ -130,11 +130,11 @@ void start() {
 
 void process() {
 	vec3 pos = TRANSFORM[3].xyz;
-	
+
 	// If particle is below wave surface, disable it.
 	float linear_dist = length(pos - camera_position_world);
 	vec2 domain_warped_uv = domain_warp(pos.xz, linear_dist);
-	vec3 displacement = get_displacement(domain_warped_uv);
+	vec3 displacement = get_displacement_tiling_blending(domain_warped_uv);
 	if (pos.y < sea_level + displacement.y) {
 		ACTIVE = false;
 	
@@ -153,7 +153,7 @@ void process() {
 	
 	// If current life time exceeds this particles max age, set it inactive
 	CUSTOM.y += DELTA / LIFETIME;
-	if (CUSTOM.y > CUSTOM.w) {
+	if (CUSTOM.y > CUSTOM.w){
 		ACTIVE = false;
 	}
 	
