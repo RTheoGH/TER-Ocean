@@ -185,3 +185,17 @@ func _get_configuration_warnings() -> PackedStringArray:
 		result.push_back("OceanEnvironment requires an Ocean3D to be assigned")
 	
 	return result
+
+
+func _on_tb_enabled_toggled(toggled_on:bool) -> void:
+	print("Tiling and blending: ", toggled_on)
+	ocean._tb_enabled = toggled_on
+
+	ocean.material.set_shader_parameter("tb_enabled", toggled_on)
+
+
+func _on_debug_enabled_toggled(toggled_on:bool) -> void:
+	if(toggled_on):
+		ocean.material.shader = load("res://addons/tessarakkt.oceanfft/shaders/DebugVisual.gdshader")
+	else:
+		ocean.material.shader = load("res://addons/tessarakkt.oceanfft/shaders/SurfaceVisual.gdshader")

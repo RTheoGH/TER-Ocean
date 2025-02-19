@@ -93,7 +93,8 @@ vec2 hash2(vec2 p)
 }
 
 vec3 get_displacement_tiling(vec2 uv)
-{
+{	
+	uv *= domain_warp_uv_scale *2.0;
 	// Get triangle info
 	float w1, w2, w3;
 	ivec2 vertex1, vertex2, vertex3;
@@ -120,7 +121,7 @@ vec3 get_displacement(vec2 uv) {
 	vec3 displacement = vec3(0.0);
 
 	displacement += texture(cascade_displacements,
-			uv * uv_scale * (1.0 / cascade_uv_scales) + wind_uv_offset * cascade_uv_scales).rgb;
+			uv  * uv_scale * (1.0 / cascade_uv_scales) + wind_uv_offset * cascade_uv_scales).rgb;
 	
 	return displacement;
 }

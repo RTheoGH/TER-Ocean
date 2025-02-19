@@ -31,7 +31,7 @@ simulation_enabled = true
 material = ExtResource("5_0jjw4")
 simulation_frameskip = 1
 heightmap_sync_frameskip = 0
-fft_resolution = 128
+fft_resolution = 64
 horizontal_dimension = 512
 time_scale = 1.1
 cascade_range = Vector2(0, 1)
@@ -358,6 +358,15 @@ layout_mode = 2
 button_pressed = true
 text = "LOD Cull Enabled"
 
+[node name="TBEnabled" type="CheckButton" parent="CanvasLayer/PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "Tiling and Blending"
+
+[node name="DebugEnabled" type="CheckButton" parent="CanvasLayer/PanelContainer/VBoxContainer"]
+layout_mode = 2
+button_pressed = true
+text = "debug view"
+
 [node name="FrameskipLabel" type="Label" parent="CanvasLayer/PanelContainer/VBoxContainer"]
 layout_mode = 2
 text = "Frameskip"
@@ -451,6 +460,8 @@ grow_vertical = 2
 
 [connection signal="toggled" from="CanvasLayer/PanelContainer/VBoxContainer/SimulateEnabled" to="CanvasLayer" method="_on_simulate_enabled_toggled"]
 [connection signal="toggled" from="CanvasLayer/PanelContainer/VBoxContainer/CullEnabled" to="CanvasLayer" method="_on_cull_enabled_toggled"]
+[connection signal="toggled" from="CanvasLayer/PanelContainer/VBoxContainer/TBEnabled" to="." method="_on_tb_enabled_toggled"]
+[connection signal="toggled" from="CanvasLayer/PanelContainer/VBoxContainer/DebugEnabled" to="." method="_on_debug_enabled_toggled"]
 [connection signal="value_changed" from="CanvasLayer/PanelContainer/VBoxContainer/Frameskip" to="CanvasLayer" method="_on_frameskip_value_changed"]
 [connection signal="value_changed" from="CanvasLayer/PanelContainer/VBoxContainer/HeightmapSyncFrameskip" to="CanvasLayer" method="_on_heightmap_sync_frameskip_value_changed"]
 [connection signal="value_changed" from="CanvasLayer/PanelContainer/VBoxContainer/PlanetaryCurve" to="CanvasLayer" method="_on_planetary_curve_value_changed"]
