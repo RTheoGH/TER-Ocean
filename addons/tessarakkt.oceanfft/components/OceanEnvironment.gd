@@ -199,3 +199,8 @@ func _on_debug_enabled_toggled(toggled_on:bool) -> void:
 		ocean.material.shader = load("res://addons/tessarakkt.oceanfft/shaders/DebugVisual.gdshader")
 	else:
 		ocean.material.shader = load("res://addons/tessarakkt.oceanfft/shaders/SurfaceVisual.gdshader")
+
+
+func _on_tb_scale_slider_value_changed(value:float) -> void:
+	ocean._tb_scale = value
+	ocean.material.set_shader_parameter("tb_scale", ocean._tb_scale)

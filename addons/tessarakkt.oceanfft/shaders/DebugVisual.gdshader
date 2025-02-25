@@ -114,6 +114,7 @@ instance uniform float min_lod_morph_distance;
 instance uniform float max_lod_morph_distance;
 
 
+
 // Varyings
 /******************************************************************************/
 varying vec3 world_vertex;
@@ -131,5 +132,5 @@ void vertex() {
 
 
 void fragment() {
-	ALBEDO = get_displacement_tiling(world_vertex.xz);
+	ALBEDO = get_displacement_tiling(world_vertex.xz );
 }

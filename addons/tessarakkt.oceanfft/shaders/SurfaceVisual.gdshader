@@ -150,7 +150,7 @@ void vertex() {
 	// Use the world vertex XZ coordinates as UV for simplicity
 	vec3 displacement;
 	if(tb_enabled){
-		displacement = get_displacement_tiling(VERTEX.xz) ;
+		displacement = get_displacement_tiling(VERTEX.xz * tb_scale) ;
 	}else{
 		displacement = get_displacement(domain_warped_uv);
 	}

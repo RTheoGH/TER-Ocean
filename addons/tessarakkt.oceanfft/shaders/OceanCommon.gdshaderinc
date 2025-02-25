@@ -54,16 +54,18 @@ uniform sampler2D domain_warp_texture;
 
 group_uniforms;
 
+uniform float tb_scale = 1.0;
+
 
 void TriangleGrid(vec2 uv,
  out float w1,out float w2, out float w3,
  out ivec2 vertex1, out ivec2 vertex2, out ivec2 vertex3){
-	
+
 	uv *= 3.464; // 2 * sqrt(3)
-	
+
 	const mat2 gridToSkewedGrid = mat2(vec2(1.0, 0.0), vec2(-0.57735027, 1.15470054));
 	vec2 skewedCoord = gridToSkewedGrid * uv;
-	
+
 	ivec2 baseId = ivec2(floor(skewedCoord));
 	vec3 temp = vec3(fract(skewedCoord), 0);
 	temp.z = 1.0 - temp.x - temp.y;
@@ -93,22 +95,22 @@ vec2 hash2(vec2 p)
 }
 
 vec3 get_displacement_tiling(vec2 uv)
-{	
-	uv *= domain_warp_uv_scale *2.0;
+{
+	uv *=  tb_scale * 0.0000625;
 	// Get triangle info
 	float w1, w2, w3;
 	ivec2 vertex1, vertex2, vertex3;
 	TriangleGrid(uv, w1, w2, w3, vertex1, vertex2, vertex3);
-		
+
 	// Assign random offset to each triangle vertex
 	vec2 uv1 = uv + hash2(vec2(vertex1));
 	vec2 uv2 = uv + hash2(vec2(vertex2));
 	vec2 uv3 = uv + hash2(vec2(vertex3));
 
-	vec3 I1 = texture(cascade_displacements, uv1).rgb;
-	vec3 I2 = texture(cascade_displacements, uv2).rgb;
-	vec3 I3 = texture(cascade_displacements, uv3).rgb;
-	
+	vec3 I1 = texture(cascade_displacements, uv1 + wind_uv_offset).rgb;
+	vec3 I2 = texture(cascade_displacements, uv2 + wind_uv_offset).rgb;
+	vec3 I3 = texture(cascade_displacements, uv3 + wind_uv_offset).rgb;
+
 	vec3 color = w1 * I1 + w2 * I2 + w3 * I3;
 
 	return color;
@@ -122,7 +124,7 @@ vec3 get_displacement(vec2 uv) {
 
 	displacement += texture(cascade_displacements,
 			uv  * uv_scale * (1.0 / cascade_uv_scales) + wind_uv_offset * cascade_uv_scales).rgb;
-	
+
 	return displacement;
 }
 
@@ -133,19 +135,19 @@ vec3 get_displacement(vec2 uv) {
 vec4 get_normals_jacobian(vec2 uv, vec3 displacement) {
 	// Surface Normals
 	float offset = 1.0;
-	
+
 	vec3 right = (vec3(offset, get_displacement(uv + vec2(offset, 0.0)).y, 0.0)) - displacement;
 	vec3 left = (vec3(-offset, get_displacement(uv + vec2(-offset, 0.0)).y, 0.0)) - displacement;
 	vec3 bottom = (vec3(0.0, get_displacement(uv + vec2(0.0, offset)).y, offset)) - displacement;
 	vec3 top = (vec3(0.0, get_displacement(uv + vec2(0.0, -offset)).y, -offset)) - displacement;
-	
+
 	vec3 top_right = cross(right, top);
 	vec3 top_left = cross(top, left);
 	vec3 bottom_left = cross(left, bottom);
 	vec3 bottom_right = cross(bottom, right);
-	
+
 	vec3 normal = normalize(top_right + top_left + bottom_left + bottom_right) * normal_factor;
-	
+
 	// Jacobian Determinant
 	// Used for foam/whitecap rendering
 	float jxx = right.x / offset;
@@ -153,7 +155,7 @@ vec4 get_normals_jacobian(vec2 uv, vec3 displacement) {
 	float jyx = bottom.x / offset;
 	float jyy = bottom.y / offset;
 	float jacobian_determinant = (jxx * jyy) - (jxy * jyx);
-	
+
 	return vec4(normal, jacobian_determinant);
 }
 
@@ -165,8 +167,8 @@ vec2 domain_warp(vec2 uv, float linear_dist) {
 	vec2 domain_warp = vec2(
 			texture(domain_warp_texture, uv * domain_warp_uv_scale).r,
 			texture(domain_warp_texture, -uv * domain_warp_uv_scale).r);
-	
+
 	domain_warp *= domain_warp_strength * (linear_dist / view_distance_max);
-	
+
 	return uv + domain_warp;
 }
