@@ -137,43 +137,16 @@ vec3 HDR(vec3 color, float e) {
 
 
 void vertex() {
-	float linear_dist = length(VERTEX - CAMERA_POSITION_WORLD);
-
-	// LOD Morph
-	float morph_factor = (clamp(linear_dist, min_lod_morph_distance, max_lod_morph_distance) - min_lod_morph_distance) / (max_lod_morph_distance - min_lod_morph_distance);
-	//VERTEX.xz -= lod_morph(morph_factor, UV);
-
-	// Domain Warp
-	vec2 domain_warped_uv = domain_warp(VERTEX.xz, linear_dist);
-
 	// Vertex Offset
-	// Use the world vertex XZ coordinates as UV for simplicity
 	vec3 displacement;
-	if(tb_enabled){
-		displacement = get_displacement_tiling(VERTEX.xz * tb_scale) ;
-	}else{
-		displacement = get_displacement(domain_warped_uv);
-	}
+	displacement = get_displacement_tiling(VERTEX.xz);
 
 	VERTEX += displacement;
 	world_vertex = VERTEX;
-
-	// Surface Normals & Jacobian
-	vec4 nj = get_normals_jacobian(domain_warped_uv, displacement);
+	
+	vec4 nj = get_normals_jacobian(VERTEX.xz, displacement);
 	NORMAL = nj.xyz * normal_factor;
 	jacobian_determinant = nj.w;
-
-	// Wave Amplitude Distance Fade
-	// Flattens the waves with increasing distance from camera. This is done
-	// after surface normal calculations to retain normals in the distance.
-	float amplitude_fade_range = clamp(linear_dist, 0.0, amplitude_scale_fade_distance) / amplitude_scale_fade_distance;
-	//VERTEX.y *= mix(amplitude_scale_max, amplitude_scale_min, amplitude_fade_range);
-
-	// Planetary Curve
-	// Take distance squared from camera to vertex, multiply by strength factor,
-	// subtract from vertex Y.
-	float curvation = planetary_curve_strength * (pow(abs(domain_warped_uv.x - CAMERA_POSITION_WORLD.x), 2.0) + pow(abs(domain_warped_uv.y - CAMERA_POSITION_WORLD.z), 2.0));
-	//VERTEX.y -= curvation;
 }
 
 

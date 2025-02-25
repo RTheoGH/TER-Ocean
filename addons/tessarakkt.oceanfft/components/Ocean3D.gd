@@ -257,13 +257,14 @@ var _domain_warp_image:Image
 var _rng := RandomNumberGenerator.new()
 
 var _tb_enabled := true
-var _tb_scale := 1.0
+var _tb_scale := 20.0
 
 
 ## Initialize the simulation
 func initialize_simulation() -> void:
 	_rng.randomize()
 	material.set_shader_parameter("tb_enabled", _tb_enabled)
+	material.set_shader_parameter("tb_scale", _tb_scale)
 	RenderingServer.call_on_render_thread(_initialize_simulation)
 
 

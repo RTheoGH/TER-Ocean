@@ -31,7 +31,7 @@ simulation_enabled = true
 material = ExtResource("5_0jjw4")
 simulation_frameskip = 1
 heightmap_sync_frameskip = 0
-fft_resolution = 64
+fft_resolution = 128
 horizontal_dimension = 512
 time_scale = 1.1
 cascade_range = Vector2(0, 1)
@@ -378,10 +378,10 @@ text = "Tiling and Blending UV scaling
 
 [node name="tbScaleSlider" type="HSlider" parent="CanvasLayer/PanelContainer/VBoxContainer"]
 layout_mode = 2
-min_value = 0.1
+min_value = 1.0
 max_value = 40.0
 step = 0.05
-value = 1.0
+value = 20.0
 
 [node name="FrameskipLabel" type="Label" parent="CanvasLayer/PanelContainer/VBoxContainer"]
 layout_mode = 2

@@ -97,6 +97,7 @@ vec2 hash2(vec2 p)
 vec3 get_displacement_tiling(vec2 uv)
 {
 	uv *=  tb_scale * 0.0000625;
+
 	// Get triangle info
 	float w1, w2, w3;
 	ivec2 vertex1, vertex2, vertex3;
@@ -111,12 +112,32 @@ vec3 get_displacement_tiling(vec2 uv)
 	vec3 I2 = texture(cascade_displacements, uv2 + wind_uv_offset).rgb;
 	vec3 I3 = texture(cascade_displacements, uv3 + wind_uv_offset).rgb;
 
+	//Linear blending a changer
 	vec3 color = w1 * I1 + w2 * I2 + w3 * I3;
 
 	return color;
 }
 
+//ne pas utiliser
+vec3 get_normal(vec3 position )
+{
 
+	vec3 dx = position + vec3(1.0,0,0);
+	vec3 displacement_dx = get_displacement_tiling(dx.xz);
+	vec3 new_x = dx + displacement_dx * vec3(0,1,0);
+
+	vec3 dz = position + vec3(0,0,1.0);
+	vec3 displacement_dz = get_displacement_tiling(dz.xz);
+	vec3 new_z = dz + displacement_dz * vec3(0,1,0);
+
+	vec3 tangent1 = new_x - position;
+	vec3 tangent2 = new_z - position;
+
+	vec3 normal = cross(tangent1, tangent2);
+	normal = normalize(normal);
+
+	return normal;
+}
 
 // Get the total wave displacement of a vertex from all cascades.
 vec3 get_displacement(vec2 uv) {
@@ -134,12 +155,12 @@ vec3 get_displacement(vec2 uv) {
 // will be packed in the W channel.
 vec4 get_normals_jacobian(vec2 uv, vec3 displacement) {
 	// Surface Normals
-	float offset = 1.0;
+	float offset = 0.1;
 
-	vec3 right = (vec3(offset, get_displacement(uv + vec2(offset, 0.0)).y, 0.0)) - displacement;
-	vec3 left = (vec3(-offset, get_displacement(uv + vec2(-offset, 0.0)).y, 0.0)) - displacement;
-	vec3 bottom = (vec3(0.0, get_displacement(uv + vec2(0.0, offset)).y, offset)) - displacement;
-	vec3 top = (vec3(0.0, get_displacement(uv + vec2(0.0, -offset)).y, -offset)) - displacement;
+	vec3 right = (vec3(offset, get_displacement_tiling(uv + vec2(offset, 0.0)).y, 0.0)) - displacement;
+	vec3 left = (vec3(-offset, get_displacement_tiling(uv + vec2(-offset, 0.0)).y, 0.0)) - displacement;
+	vec3 bottom = (vec3(0.0, get_displacement_tiling(uv + vec2(0.0, offset)).y, offset)) - displacement;
+	vec3 top = (vec3(0.0, get_displacement_tiling(uv + vec2(0.0, -offset)).y, -offset)) - displacement;
 
 	vec3 top_right = cross(right, top);
 	vec3 top_left = cross(top, left);
@@ -158,7 +179,6 @@ vec4 get_normals_jacobian(vec2 uv, vec3 displacement) {
 
 	return vec4(normal, jacobian_determinant);
 }
-
 
 // Apply domain warp to the given coordinate. This has no effect at 0 distance,
 // and gets stronger linearly as distance increases. It will reach 100% strength

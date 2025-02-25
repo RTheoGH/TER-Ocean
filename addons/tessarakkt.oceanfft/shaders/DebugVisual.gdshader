@@ -127,10 +127,11 @@ varying float foam_specular_factor;
 
 void vertex() {
 	world_vertex = VERTEX;
-
 }
 
 
 void fragment() {
-	ALBEDO = get_displacement_tiling(world_vertex.xz );
+	vec3 displacement = get_displacement_tiling(world_vertex.xz );
+	ALBEDO = displacement;
+	ALBEDO = get_normals_jacobian(world_vertex.xz, displacement ).xyz;
 }
