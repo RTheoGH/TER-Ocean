@@ -59,7 +59,7 @@ vec3 get_displacement(vec2 uv) {
 
 		displacement += texture(cascade_displacements,
 				uv * uv_scale * (1.0 / cascade_uv_scales) + wind_uv_offset * cascade_uv_scales).rgb;
-	
+
 	return displacement;
 }
 
@@ -85,7 +85,7 @@ void TriangleGrid(vec2 uv ,
 	if (temp.z > 0.0)
 	{
 		w1 = temp.z;
-		w2 = temp.y;	
+		w2 = temp.y;
 		w3 = temp.x;
 		vertex1 = baseId;
 		vertex2 = baseId + ivec2(0, 1);
@@ -128,7 +128,7 @@ vec3 ProceduralTilingAndBlending(vec2 uv)
 	vec2 uv2 = uv + hash_tb(vec2(vertex2));
 	vec2 uv3 = uv + hash_tb(vec2(vertex3));
 	// Precompute UV derivatives
-	
+
 	//Commented to do without anistropic filter
 	// vec2 duvdx = dFdx(uv);
 	// vec2 duvdy = dFdy(uv);
@@ -136,7 +136,7 @@ vec3 ProceduralTilingAndBlending(vec2 uv)
 	// vec3 I1 = textureGrad(input, uv1, duvdx, duvdy).rgb;
 	// vec3 I2 = textureGrad(input, uv2, duvdx, duvdy).rgb;
 	// vec3 I3 = textureGrad(input, uv3, duvdx, duvdy).rgb;
-	
+
 	vec3 I1 = texture(cascade_displacements , uv1).rgb;
 	vec3 I2 = texture(cascade_displacements , uv2).rgb;
 	vec3 I3 = texture(cascade_displacements , uv3).rgb;
@@ -161,7 +161,7 @@ vec4 get_normals_tb(vec2 uv , vec3 displacement) {
 
     // Apply Equation (6) from the paper
     vec4 normals = vec4(displacement, 1.0) - mean_normal;
-    
+
     // Normalize the final normal
     normals = normalize(normals + mean_normal);
 
@@ -175,19 +175,19 @@ vec4 get_normals_tb(vec2 uv , vec3 displacement) {
 vec4 get_normals_jacobian(vec2 uv, vec3 displacement){
 	// Surface Normals
 	float offset = 1.0;
-	
+
 	vec3 right = (vec3(offset, get_displacement(uv + vec2(offset, 0.0)).y, 0.0)) - displacement;
 	vec3 left = (vec3(-offset, get_displacement(uv + vec2(-offset, 0.0)).y, 0.0)) - displacement;
 	vec3 bottom = (vec3(0.0, get_displacement(uv + vec2(0.0, offset)).y, offset)) - displacement;
 	vec3 top = (vec3(0.0, get_displacement(uv + vec2(0.0, -offset)).y, -offset)) - displacement;
-	
+
 	vec3 top_right = cross(right, top);
 	vec3 top_left = cross(top, left);
 	vec3 bottom_left = cross(left, bottom);
 	vec3 bottom_right = cross(bottom, right);
-	
+
 	vec3 normal = normalize(top_right + top_left + bottom_left + bottom_right) * normal_factor;
-	
+
 	// Jacobian Determinant
 	// Used for foam/whitecap rendering
 	float jxx = right.x / offset;
@@ -195,7 +195,7 @@ vec4 get_normals_jacobian(vec2 uv, vec3 displacement){
 	float jyx = bottom.x / offset;
 	float jyy = bottom.y / offset;
 	float jacobian_determinant = (jxx * jyy) - (jxy * jyx);
-	
+
 	return vec4(normal, jacobian_determinant);
 }
 
@@ -207,8 +207,8 @@ vec2 domain_warp(vec2 uv, float linear_dist) {
 	vec2 domain_warp = vec2(
 			texture(domain_warp_texture, uv * domain_warp_uv_scale).r,
 			texture(domain_warp_texture, -uv * domain_warp_uv_scale).r);
-	
+
 	domain_warp *= domain_warp_strength * (linear_dist / view_distance_max);
-	
+
 	return uv + domain_warp;
 }
