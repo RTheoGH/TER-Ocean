@@ -8,6 +8,8 @@ extends CanvasLayer
 @onready var fps_view:Label = $VBoxContainer/FPS
 @onready var ocean_fps_view:Label = $VBoxContainer/OceanFPS
 
+#@onready var sun:DirectionalLight3D = $OceanEnvironment/DirectionalLight3D_Sun
+#@onready var sky:DirectionalLight3D = $OceanEnvironment/DirectionalLight3D_Sky
 
 @export var ocean:OceanEnvironment
 @export var free_camera:Camera3D
@@ -15,6 +17,24 @@ extends CanvasLayer
 
 var _debug_textures_initialized := false
 
+
+var sun: DirectionalLight3D
+var sky: DirectionalLight3D
+var leanMapLight: SpotLight3D
+var camera:Camera3D
+
+var leanmap_debug:bool = false
+
+func _ready():
+	if ocean:  # Ensure ocean is assigned before accessing it
+		sun = ocean.get_node("DirectionalLight3D_Sun")
+		sky = ocean.get_node("DirectionalLight3D_Sky")
+		leanMapLight = ocean.get_node("LeanMappingLight")
+		camera = ocean.get_node("Camera3D")
+		#setup_debug_light()
+		
+	else:
+		print("Error: 'ocean' is not assigned in the Inspector.")
 
 func _process(_delta):
 	var fps := Engine.get_frames_per_second()
@@ -29,6 +49,7 @@ func _process(_delta):
 		_debug_textures_initialized = true
 
 
+#TODO : deactivate LEAN Mapping light when the rest are activated
 func _input(event:InputEvent) -> void:
 	if event.is_action_pressed("camera_mode_free") and free_camera != null:
 		free_camera.make_current()
@@ -47,6 +68,21 @@ func _input(event:InputEvent) -> void:
 		else:
 			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	
+	
+	#Press 0 to activate. Turns on lean mapping and a specular light to make this visible
+	if event.is_action_pressed("lean_mapping_test_mode"):
+		leanmap_debug = not leanmap_debug
+		if(leanmap_debug):
+			print("Lean map test mode activated check mark emoji")
+			sun.visible = false
+			leanMapLight.visible = true
+		else:
+			print("Lean map test mode deactivated x emoji")
+			sun.visible = true
+			sky.visible = false
+			leanMapLight.visible = false
+		print("Visible? " + str(leanMapLight.visible))
+
 	get_viewport().get_camera_3d().motion_enabled = not displacement_cascade0_view.visible
 
 
