@@ -50,18 +50,35 @@ uniform float domain_warp_strength = 1500.0;
 // tiling at large distances from the camera.
 uniform sampler2D domain_warp_texture;
 
+// uniform sampler2D flow_map;
+
 group_uniforms;
+
+vec2 get_flow_direction(vec2 uv) {
+    // vec2 flow = texture(flow_map, uv).rg; // R = X, G = Y
+	vec2 flow = vec2(0, 0.2);
+    flow = (flow - 0.5) * 2.0; 
+    return normalize(flow);
+}
 
 
 // Get the total wave displacement of a vertex from all cascades.
 vec3 get_displacement(vec2 uv) {
 	vec3 displacement = vec3(0.0);
 
-		displacement += texture(cascade_displacements,
-				uv * uv_scale * (1.0 / cascade_uv_scales) + wind_uv_offset * cascade_uv_scales).rgb;
+		vec2 flow_direction = get_flow_direction(uv);
+		float theta = atan(flow_direction.y, flow_direction.x) - atan(wind_uv_offset.y, wind_uv_offset.x);
+		mat2 rotation = mat2(vec2(cos(theta), -sin(theta)), vec2(sin(theta), cos(theta)));
+		flow_direction = rotation * flow_direction;
+		vec2 warped_uv = uv + flow_direction * 0.1;
+
+		displacement = texture(cascade_displacements, 
+		                warped_uv * uv_scale * (1.0 / cascade_uv_scales) + wind_uv_offset * cascade_uv_scales).rgb;
 	
 	return displacement;
 }
+
+
 
 
 // Calculate surface normals and Jacobian determinant for a given coordinate.
@@ -107,3 +124,5 @@ vec2 domain_warp(vec2 uv, float linear_dist) {
 	
 	return uv + domain_warp;
 }
+
+
