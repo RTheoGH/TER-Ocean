@@ -50,6 +50,29 @@ wind_speed = 15.0
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_p0g3t"]
 shader = ExtResource("6_nklv0")
+<<<<<<< HEAD
+=======
+shader_parameter/normal_factor = 1.0
+shader_parameter/cascade_uv_scales = null
+shader_parameter/uv_scale = 0.00195312
+shader_parameter/wind_uv_offset = Vector2(0, 0)
+shader_parameter/view_distance_max = 16000.0
+shader_parameter/domain_warp_uv_scale = 6.25e-05
+shader_parameter/domain_warp_strength = 1500.0
+shader_parameter/camera_position_world = null
+shader_parameter/tb_scale = 1.0
+shader_parameter/splash_subparticles = 10
+shader_parameter/splash_jacobian_limit = -3.0
+shader_parameter/splash_coverage = 1.0
+shader_parameter/sea_level = 0.0
+shader_parameter/lifetime_randomness = 0.25
+shader_parameter/emission_box_extents = Vector3(500, 0, 500)
+shader_parameter/direction = Vector3(1, 1, 0)
+shader_parameter/spread = 45.0
+shader_parameter/gravity = Vector3(20, -9.8, 0)
+shader_parameter/initial_linear_velocity_min = 25.0
+shader_parameter/initial_linear_velocity_max = 35.0
+>>>>>>> origin/arthur
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_5bfsg"]
 render_priority = 1
@@ -68,6 +91,29 @@ size = Vector2(15, 15)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_gc8pj"]
 shader = ExtResource("6_nklv0")
+<<<<<<< HEAD
+=======
+shader_parameter/normal_factor = 1.0
+shader_parameter/cascade_uv_scales = null
+shader_parameter/uv_scale = 0.00195312
+shader_parameter/wind_uv_offset = Vector2(0, 0)
+shader_parameter/view_distance_max = 16000.0
+shader_parameter/domain_warp_uv_scale = 6.25e-05
+shader_parameter/domain_warp_strength = 1500.0
+shader_parameter/camera_position_world = null
+shader_parameter/tb_scale = 1.0
+shader_parameter/splash_subparticles = 10
+shader_parameter/splash_jacobian_limit = -3.0
+shader_parameter/splash_coverage = 1.0
+shader_parameter/sea_level = 0.0
+shader_parameter/lifetime_randomness = 0.25
+shader_parameter/emission_box_extents = Vector3(500, 0, 500)
+shader_parameter/direction = Vector3(1, 1, 0)
+shader_parameter/spread = 45.0
+shader_parameter/gravity = Vector3(20, -9.8, 0)
+shader_parameter/initial_linear_velocity_min = 25.0
+shader_parameter/initial_linear_velocity_max = 35.0
+>>>>>>> origin/arthur
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_5gdxj"]
 render_priority = 1
@@ -231,7 +277,7 @@ process_material = SubResource("ShaderMaterial_awrh8")
 draw_pass_1 = SubResource("QuadMesh_x0k2k")
 
 [node name="Camera3D" type="Camera3D" parent="." node_paths=PackedStringArray("reflection_probe")]
-transform = Transform3D(1, 0, 0, 0, 0.906308, 0.422618, 0, -0.422618, 0.906308, 0, 80.3089, 0)
+transform = Transform3D(1, 0, 0, 0, 0.906308, 0.422618, 0, -0.422618, 0.906308, 0, 100, 0)
 current = true
 near = 1.0
 far = 16000.0
@@ -270,12 +316,14 @@ offset_right = 40.0
 offset_bottom = 40.0
 
 [node name="Displacement_cascade1" type="TextureRect" parent="CanvasLayer"]
+visible = false
 custom_minimum_size = Vector2(256, 256)
 offset_left = 288.0
 offset_right = 544.0
 offset_bottom = 256.0
 
 [node name="Displacement_cascade2" type="TextureRect" parent="CanvasLayer"]
+visible = false
 custom_minimum_size = Vector2(256, 256)
 offset_left = 576.0
 offset_right = 832.0
@@ -320,6 +368,27 @@ layout_mode = 2
 button_pressed = true
 text = "LOD Cull Enabled"
 
+[node name="TBEnabled" type="CheckButton" parent="CanvasLayer/PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "Tiling and Blending"
+
+[node name="DebugEnabled" type="CheckButton" parent="CanvasLayer/PanelContainer/VBoxContainer"]
+layout_mode = 2
+button_pressed = true
+text = "debug view"
+
+[node name="tbScaleLabel" type="Label" parent="CanvasLayer/PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "Tiling and Blending UV scaling
+"
+
+[node name="tbScaleSlider" type="HSlider" parent="CanvasLayer/PanelContainer/VBoxContainer"]
+layout_mode = 2
+min_value = 1.0
+max_value = 40.0
+step = 0.05
+value = 20.0
+
 [node name="FrameskipLabel" type="Label" parent="CanvasLayer/PanelContainer/VBoxContainer"]
 layout_mode = 2
 text = "Frameskip"
@@ -330,19 +399,23 @@ max_value = 30.0
 value = 1.0
 
 [node name="HeightmapSyncFrameskipLabel" type="Label" parent="CanvasLayer/PanelContainer/VBoxContainer"]
+visible = false
 layout_mode = 2
 text = "Heightmap Sync Frameskip"
 
 [node name="HeightmapSyncFrameskip" type="SpinBox" parent="CanvasLayer/PanelContainer/VBoxContainer"]
+visible = false
 layout_mode = 2
 min_value = -1.0
 max_value = 30.0
 
 [node name="PlanetaryCurveLabel" type="Label" parent="CanvasLayer/PanelContainer/VBoxContainer"]
+visible = false
 layout_mode = 2
 text = "Planetary Curve"
 
 [node name="PlanetaryCurve" type="HSlider" parent="CanvasLayer/PanelContainer/VBoxContainer"]
+visible = false
 layout_mode = 2
 max_value = 1.0
 step = -1.0
@@ -413,6 +486,9 @@ grow_vertical = 2
 
 [connection signal="toggled" from="CanvasLayer/PanelContainer/VBoxContainer/SimulateEnabled" to="CanvasLayer" method="_on_simulate_enabled_toggled"]
 [connection signal="toggled" from="CanvasLayer/PanelContainer/VBoxContainer/CullEnabled" to="CanvasLayer" method="_on_cull_enabled_toggled"]
+[connection signal="toggled" from="CanvasLayer/PanelContainer/VBoxContainer/TBEnabled" to="." method="_on_tb_enabled_toggled"]
+[connection signal="toggled" from="CanvasLayer/PanelContainer/VBoxContainer/DebugEnabled" to="." method="_on_debug_enabled_toggled"]
+[connection signal="value_changed" from="CanvasLayer/PanelContainer/VBoxContainer/tbScaleSlider" to="." method="_on_tb_scale_slider_value_changed"]
 [connection signal="value_changed" from="CanvasLayer/PanelContainer/VBoxContainer/Frameskip" to="CanvasLayer" method="_on_frameskip_value_changed"]
 [connection signal="value_changed" from="CanvasLayer/PanelContainer/VBoxContainer/HeightmapSyncFrameskip" to="CanvasLayer" method="_on_heightmap_sync_frameskip_value_changed"]
 [connection signal="value_changed" from="CanvasLayer/PanelContainer/VBoxContainer/PlanetaryCurve" to="CanvasLayer" method="_on_planetary_curve_value_changed"]

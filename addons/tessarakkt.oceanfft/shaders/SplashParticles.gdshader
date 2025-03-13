@@ -125,6 +125,8 @@ void start() {
 	
 	CUSTOM.y = 0.0;
 	CUSTOM.w = (1.0 - lifetime_randomness * rand_from_seed(alt_seed));
+	
+	ACTIVE = false;
 }
 
 

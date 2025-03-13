@@ -106,14 +106,13 @@ uniform float amplitude_scale_fade_distance = 12000.0;
 uniform sampler2D depth_texture : hint_depth_texture, filter_linear_mipmap;
 uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
 
-uniform bool tb_enabled = true;
-
 
 // Instance Uniforms
 /******************************************************************************/
 instance uniform float patch_size = 512.0;
 instance uniform float min_lod_morph_distance;
 instance uniform float max_lod_morph_distance;
+
 
 
 // Varyings
@@ -125,99 +124,14 @@ varying float foam_mix_factor;
 varying float foam_specular_factor;
 
 
-vec2 lod_morph(float morph_factor, vec2 grid_pos) {
-	vec2 fracPart = fract(grid_pos.xy * vertex_resolution * 0.5) * 2.0 / vertex_resolution;
-	return fracPart * patch_size * morph_factor;
-}
-
-
-vec3 HDR(vec3 color, float e) {
-	return 1.0 - exp(-color * e);
-}
-
 
 void vertex() {
-	// Vertex Offset
-	vec3 displacement;
-	displacement = get_displacement_tiling(VERTEX.xz);
-
-	VERTEX += displacement;
 	world_vertex = VERTEX;
-	
-	vec4 nj = get_normals_jacobian(VERTEX.xz, displacement);
-	NORMAL = nj.xyz * normal_factor;
-	jacobian_determinant = nj.w;
 }
 
 
 void fragment() {
-	// Calculate fragments Fresnel factor
-	float fresnel_factor = pow(1.0 - dot(NORMAL, normalize(VIEW)), fresnel_power);
-	float fresnel = fresnel_factor * fresnel_strength + fresnel_offset;
-
-	// Get the linear depth between each ocean pixel and whatever is behind it.
-	float depth = texture(depth_texture, SCREEN_UV).r;
-	vec4 view = INV_PROJECTION_MATRIX * vec4(vec3(SCREEN_UV, depth), 1.0);
-	view.xyz /= view.w;
-	float linear_depth = -view.z;
-
-	// Get the distance between the camera and each ocean pixel.
-	float linear_dist = length(world_vertex - CAMERA_POSITION_WORLD);
-
-	// Refraction, based on depth between ocean pixel and object behind.
-	// Fades out with distance so as to be smooth transition to lower LOD shaders
-	// which may exclude this.
-	float refraction_factor = clamp(linear_depth * refraction_depth_factor, refraction_factor_min, refraction_factor_max);
-	vec2 refracted_uv = SCREEN_UV - NORMAL.xz * refraction_factor;
-	vec3 background_color = textureLod(screen_texture, refracted_uv, 0.0).rgb;
-	float refraction_blend_factor = clamp(pow(linear_depth, refraction_distance_power), 0.0, refraction_distance_max) / refraction_distance_max;
-	vec3 water_color = mix(background_color * shallow_color.rgb * refraction_background_brightness, deep_color.rgb, refraction_blend_factor * (1.0 - fresnel));
-
-	// Fresnel Shading
-	vec3 sky = fresnel_sky_color.rgb * fresnel;
-	vec3 water = (1.0 - fresnel) * water_color * fresnel_sky_color.rgb;
-	water_color = HDR(sky + water, fresnel_exposure);
-
-	// Whitecap Rendering
-	foam_mix_factor = clamp((-jacobian_determinant + foam_jacobian_limit) * foam_coverage, 0.0, 1.0);
-	foam_mix_factor = (foam_mix_factor * foam_mix_factor) * foam_mix_strength;
-	ALBEDO = mix(water_color, texture(foam_texture, world_vertex.xz * uv_scale).rgb, foam_mix_factor);
-	foam_specular_factor = (1.0 - foam_mix_factor);
-
-	// Distance Fade
-	float fade_start = view_distance_max * view_fade_start;
-	ALPHA = 1.0 - (clamp(linear_dist, fade_start, view_distance_max) - fade_start) / (view_distance_max - fade_start);
-
-	// Misc. PBR Settings
-	ROUGHNESS = foam_mix_factor + 0.02;
-	METALLIC = pbr_metallic_strength * foam_specular_factor;
-	SPECULAR = pbr_specular_strength * foam_specular_factor * fresnel_factor + pbr_specular_offset;
-
-	wave_height = world_vertex.y;
-}
-
-
-void light() {
-	vec3 half_vector = normalize(LIGHT + VIEW);
-
-	// Specular
-	float spec = clamp(pow(dot(NORMAL, half_vector), specular_power), 0.0, 1.0) * specular_strength;
-	SPECULAR_LIGHT += (LIGHT_COLOR * ALBEDO * ATTENUATION / PI) * clamp(dot(NORMAL, half_vector), 0.0, 1.0) * foam_specular_factor;
-	SPECULAR_LIGHT += LIGHT_COLOR * ATTENUATION * spec * foam_specular_factor;
-
-	// Sub Surface Scattering
-	vec3 sss_sun_light = sss_color.rgb * ATTENUATION;
-
-	// SSS Wave Backlight
-	float sss = sss_backlight_strength * max(0.0, wave_height + sss_backlight_depth) * pow(max(0.0, dot(-LIGHT, VIEW)), 4.0);
-	sss *= pow(0.5 - 0.5 * dot(-LIGHT, half_vector), 3.0);
-	sss *= sss_backlight_fov * pow(max(0.0, dot(VIEW, half_vector)) , 2.0);
-	vec3 sss_result = sss * sss_sun_light;
-
-	// SSS Upwelling Light
-	sss_result += sss_upwelling * max(0.0, dot(LIGHT, half_vector)) * sss_sun_light;
-	SPECULAR_LIGHT += sss_result * foam_specular_factor;
-
-	// Foam Lighting
-	DIFFUSE_LIGHT += foam_diffuse_strength * foam_mix_factor * foam_diffuse_color.rgb * ATTENUATION;
+	vec3 displacement = get_displacement_tiling(world_vertex.xz );
+	ALBEDO = displacement;
+	ALBEDO = get_normals_jacobian(world_vertex.xz, displacement ).xyz;
 }
