@@ -60,9 +60,9 @@ group_uniforms;
 
 vec2 get_flow_direction(vec2 uv) {
     // vec2 flow = texture(flow_map, uv).rg; // R = X, G = Y
-	vec2 flow = vec2(0, 0.2);
-    flow = (flow - 0.5) * 2.0; 
-    return normalize(flow);
+	
+    vec2 flow = vec2(0.0, -1.0);
+	return normalize(flow);
 }
 
 uniform float tb_scale = 1.0;
@@ -119,12 +119,18 @@ vec3 get_displacement_tiling(vec2 uv)
 	vec2 uv2 = uv + hash2(vec2(vertex2));
 	vec2 uv3 = uv + hash2(vec2(vertex3));
 
-	vec3 I1 = texture(cascade_displacements, uv1 + wind_uv_offset).rgb;
-	vec3 I2 = texture(cascade_displacements, uv2 + wind_uv_offset).rgb;
-	vec3 I3 = texture(cascade_displacements, uv3 + wind_uv_offset).rgb;
+	vec2 flow_direction = get_flow_direction(uv);
+	float theta = atan(flow_direction.y, flow_direction.x) - atan(wind_uv_offset.y, wind_uv_offset.x);
+	mat2 rotation2 = mat2(vec2(cos(theta), -sin(theta)), vec2(sin(theta), cos(theta)));
+
+	vec3 I1 = texture(cascade_displacements, rotation2 * uv1 + wind_uv_offset).rgb;
+	vec3 I2 = texture(cascade_displacements, rotation2* uv2 + wind_uv_offset).rgb;
+	vec3 I3 = texture(cascade_displacements, rotation2*uv3 + wind_uv_offset).rgb;
+
+	mat3 rotation3 = mat3(vec3(cos(theta), 0, -sin(theta)), vec3(0, 1, 0), vec3(sin(theta), 0, cos(theta)));
 
 	//Linear blending a changer
-	vec3 color = w1 * I1 + w2 * I2 + w3 * I3;
+	vec3 color = w1 * rotation3 * I1 + w2 * rotation3 * I2 + w3 * rotation3 * I3;
 
 	return color;
 }
@@ -156,7 +162,7 @@ vec3 get_displacement(vec2 uv) {
 
 		displacement += texture(cascade_displacements,
 				uv * uv_scale * (1.0 / cascade_uv_scales) + wind_uv_offset * cascade_uv_scales).rgb;
-	
+
 	return displacement;
 }
 
