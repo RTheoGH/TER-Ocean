@@ -25,6 +25,9 @@ uniform vec2 wind_uv_offset = vec2(0.0, 0.0);
 // Updated with each call to Ocean3D.simulate()
 uniform sampler2D cascade_displacements;
 
+uniform sampler2D gaussian_displacement;
+uniform float gaussian_average;
+
 uniform sampler2D tb_displacement_map;
 
 // The maximum distance from the camera a fragment can be visible. Beyond this
@@ -118,6 +121,33 @@ vec3 get_displacement_tiling(vec2 uv)
 	return color;
 }
 
+vec3 get_displacement_tiling_gaussian(vec2 uv)
+{
+	uv *=  tb_scale * 0.0000625;
+
+	// Get triangle info
+	float w1, w2, w3;
+	ivec2 vertex1, vertex2, vertex3;
+	TriangleGrid(uv, w1, w2, w3, vertex1, vertex2, vertex3);
+
+	// Assign random offset to each triangle vertex
+	vec2 uv1 = uv + hash2(vec2(vertex1));
+	vec2 uv2 = uv + hash2(vec2(vertex2));
+	vec2 uv3 = uv + hash2(vec2(vertex3));
+
+	vec3 G1 = texture(cascade_displacements, uv1 + wind_uv_offset).rgb;
+	vec3 G2 = texture(cascade_displacements, uv2 + wind_uv_offset).rgb;
+	vec3 G3 = texture(cascade_displacements, uv3 + wind_uv_offset).rgb;
+
+	//Linear blending a changer
+	vec3 color = w1 * G1 + w2 * G2 + w3 * G3;
+	color -= vec3(gaussian_average);
+	color /= sqrt((w1*w1)+ (w2*w2) + (w3*w3));
+	color += vec3(gaussian_average);
+
+	return color;
+}
+
 //ne pas utiliser
 vec3 get_normal(vec3 position )
 {
@@ -155,7 +185,7 @@ vec3 get_displacement(vec2 uv) {
 // will be packed in the W channel.
 vec4 get_normals_jacobian(vec2 uv, vec3 displacement) {
 	// Surface Normals
-	float offset = 0.1;
+	float offset = 1.0;
 
 	vec3 right = (vec3(offset, get_displacement_tiling(uv + vec2(offset, 0.0)).y, 0.0)) - displacement;
 	vec3 left = (vec3(-offset, get_displacement_tiling(uv + vec2(-offset, 0.0)).y, 0.0)) - displacement;

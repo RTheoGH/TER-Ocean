@@ -16,7 +16,8 @@ enum Binding {
 	PONG = 26,
 	INPUT = 27,
 	OUTPUT = 28,
-	TB_DISPLACEMENT = 29
+	TB_DISPLACEMENT = 29,
+	GAUSSIAN_AVERAGE = 30
 }
 
 
@@ -236,6 +237,8 @@ var _tb_pipeline:RID
 var _tb_settings_buffer:RID
 var _tb_settings_uniform := RDUniform.new()
 var _tb_uniform:RDUniform
+
+var _gaussian_average_uniform: RDUniform = RDUniform.new()
 
 var _waves_image:Image
 var _waves_texture:Texture2DRD
@@ -817,6 +820,88 @@ func _simulate(delta:float, sync_heightmap:bool) -> void:
 		
 		## Retrieve the displacement map from the Spectrum texture, and store it
 		## CPU side for use by buoyancy and wave interaction systems.
+
+
+		#### Compute Gaussian Texture
+		############################################################################
+
+		var shader_file = load("res://addons/tessarakkt.oceanfft/shaders/Gaussian.glsl")
+		var spirv : RDShaderSPIRV = shader_file.get_spirv()
+		#print(spirv.compile_error_compute)		
+		_tb_shader = _rd.shader_create_from_spirv(shader_file.get_spirv())
+		
+		_tb_pipeline = _rd.compute_pipeline_create(_tb_shader)
+
+		_spectrum_uniform.binding = Binding.INPUT
+		_tb_waves_uniform.binding = Binding.OUTPUT
+		
+	
+
+		uniform_set = _rd.uniform_set_create([
+				_spectrum_uniform,
+				_tb_waves_uniform,
+				], _tb_shader, UNIFORM_SET)
+ 
+
+		compute_list = _rd.compute_list_begin()
+		_rd.compute_list_bind_compute_pipeline(compute_list, _tb_pipeline)
+		_rd.compute_list_bind_uniform_set(compute_list, uniform_set, UNIFORM_SET)
+ 
+		@warning_ignore("integer_division")
+ 
+		_rd.compute_list_dispatch(compute_list, fft_resolution / WORK_GROUP_DIM, fft_resolution / WORK_GROUP_DIM, 1)
+		_rd.compute_list_end()
+ 
+		_rd.free_rid(uniform_set)
+ 
+
+
+ 
+
+		## Retrieve the displacement map from the Spectrum texture, and store it
+ 
+
+		## CPU side for use by buoyancy and wave interaction systems.
+ 
+
+		
+ 
+
+		
+ 
+		'''
+		#### Copy the Gaussian texture into the other 
+
+		############################################################################
+
+		## Compile Shader
+
+		shader_file = load("res://addons/tessarakkt.oceanfft/shaders/CopyTexture.glsl")
+		var copy_shader = _rd.shader_create_from_spirv(shader_file.get_spirv())
+		var copy_pipeline = _rd.compute_pipeline_create(copy_shader)
+ 
+		_tb_waves_uniform.binding = Binding.INPUT
+		_spectrum_uniform.binding = Binding.OUTPUT
+ 
+		## Build Uniform Set
+
+		uniform_set = _rd.uniform_set_create([
+				_tb_waves_uniform,
+				_spectrum_uniform], _tb_shader, UNIFORM_SET)
+ 
+		## Create Compute List
+		compute_list = _rd.compute_list_begin()
+		_rd.compute_list_bind_compute_pipeline(compute_list, copy_pipeline)
+		_rd.compute_list_bind_uniform_set(compute_list, uniform_set, UNIFORM_SET)
+
+		@warning_ignore("integer_division")
+
+		_rd.compute_list_dispatch(compute_list, fft_resolution / WORK_GROUP_DIM, fft_resolution / WORK_GROUP_DIM, 1)
+ 
+		_rd.compute_list_end()
+ 
+		_rd.free_rid(uniform_set)
+		'''
 		
 		if sync_heightmap:
 

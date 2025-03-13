@@ -133,5 +133,5 @@ void vertex() {
 void fragment() {
 	vec3 displacement = get_displacement_tiling(world_vertex.xz );
 	ALBEDO = displacement;
-	ALBEDO = get_normals_jacobian(world_vertex.xz, displacement ).xyz;
+	//ALBEDO = get_normals_jacobian(world_vertex.xz, displacement ).xyz;
 }

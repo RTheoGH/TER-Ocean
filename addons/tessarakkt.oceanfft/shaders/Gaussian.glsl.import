@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://bb8bm5pht2er4"
+path="res://.godot/imported/Gaussian.glsl-dd18cf444e4245fdd59e39e09d22908b.res"
+
+[deps]
+
+source_file="res://addons/tessarakkt.oceanfft/shaders/Gaussian.glsl"
+dest_files=["res://.godot/imported/Gaussian.glsl-dd18cf444e4245fdd59e39e09d22908b.res"]
+
+[params]
+

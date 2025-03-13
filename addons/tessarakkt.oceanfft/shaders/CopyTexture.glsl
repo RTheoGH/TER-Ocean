@@ -8,6 +8,8 @@ layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 layout(set = 0, binding = 27, rg32f) uniform readonly image2D u_input;
 layout(set = 0, binding = 28, rg32f) uniform writeonly image2D u_output;
 
+shared vec3 localSum
+
 void main(){
     ivec2 coords = ivec2(gl_GlobalInvocationID.xy);
     ivec2 dimensions = imageSize(u_input);

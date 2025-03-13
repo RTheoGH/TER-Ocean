@@ -161,4 +161,3 @@ void process() {
 	
 	COLOR = vec4(1.0, 1.0, 1.0, 1.0 - (CUSTOM.y / CUSTOM.w));
 }
-

@@ -31,6 +31,7 @@ shader_parameter/normal_factor = 1.0
 shader_parameter/cascade_uv_scales = null
 shader_parameter/uv_scale = 0.00195312
 shader_parameter/wind_uv_offset = Vector2(0, 0)
+shader_parameter/gaussian_average = null
 shader_parameter/view_distance_max = 16000.0
 shader_parameter/vertex_resolution = 256.0
 shader_parameter/domain_warp_uv_scale = 6.25e-05
