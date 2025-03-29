@@ -32,6 +32,7 @@ func _process(_delta):
 func _input(event:InputEvent) -> void:
 	if event.is_action_pressed("camera_mode_free") and free_camera != null:
 		free_camera.make_current()
+		print("c'est censé changer là")
 	
 	if event.is_action_pressed("camera_mode_ship") and player_camera != null:
 		player_camera.make_current()

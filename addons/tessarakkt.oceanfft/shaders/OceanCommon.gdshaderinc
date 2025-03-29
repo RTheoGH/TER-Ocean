@@ -57,11 +57,11 @@ uniform sampler2D domain_warp_texture;
 group_uniforms;
 
 
-
+// utiliser une texture pour calculer la direction des vagues
 vec2 get_flow_direction(vec2 uv) {
-    // vec2 flow = texture(flow_map, uv).rg; // R = X, G = Y
+    // vec2 flow = texture(flow_map, uv).rg;
 	
-    vec2 flow = vec2(0.0, -1.0);
+    vec2 flow = uv - vec2(0.5, 0.5);
 	return normalize(flow);
 }
 
@@ -121,11 +121,12 @@ vec3 get_displacement_tiling(vec2 uv)
 
 	vec2 flow_direction = get_flow_direction(uv);
 	float theta = atan(flow_direction.y, flow_direction.x) - atan(wind_uv_offset.y, wind_uv_offset.x);
+	//à faire : faire un theta par sommet vertex1, 2, 3 (quand y aura une flow map)
 	mat2 rotation2 = mat2(vec2(cos(theta), -sin(theta)), vec2(sin(theta), cos(theta)));
 
-	vec3 I1 = texture(cascade_displacements, rotation2 * uv1 + wind_uv_offset).rgb;
-	vec3 I2 = texture(cascade_displacements, rotation2* uv2 + wind_uv_offset).rgb;
-	vec3 I3 = texture(cascade_displacements, rotation2*uv3 + wind_uv_offset).rgb;
+	vec3 I1 = texture(cascade_displacements, rotation2 * (uv1 + wind_uv_offset)).rgb;
+	vec3 I2 = texture(cascade_displacements, rotation2 * (uv2 + wind_uv_offset)).rgb;
+	vec3 I3 = texture(cascade_displacements, rotation2 * (uv3 + wind_uv_offset)).rgb;
 
 	mat3 rotation3 = mat3(vec3(cos(theta), 0, -sin(theta)), vec3(0, 1, 0), vec3(sin(theta), 0, cos(theta)));
 

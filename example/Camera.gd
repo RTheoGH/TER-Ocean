@@ -11,7 +11,7 @@ extends Camera3D
 
 
 var camera_motion := Vector2.ZERO
-var motion_enabled := false
+var motion_enabled := true
 var zoom_factor := 0.0
 
 
