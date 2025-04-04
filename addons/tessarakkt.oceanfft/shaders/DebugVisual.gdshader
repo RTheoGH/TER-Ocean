@@ -133,5 +133,9 @@ void vertex() {
 void fragment() {
 	vec3 displacement = get_displacement_tiling(world_vertex.xz );
 	ALBEDO = displacement;
-	//ALBEDO = get_normals_jacobian(world_vertex.xz, displacement ).xyz;
+	ALBEDO = get_normals_jacobian(world_vertex.xz, displacement ).xyz / 2.0;
+
+	vec2 uv = world_vertex.xz * tb_scale * 0.0000625;
+
+	ALBEDO = textureLod(cascade_displacements, uv, 1000000).rgb;
 }

@@ -71,7 +71,7 @@ enum FFTResolution {
 		_is_initial_spectrum_changed = true
 
 ## The horizontal distance the ocean patch should be simulated for.
-@export_range(0, 2048) var horizontal_dimension := 256:
+@export_range(0, 4096) var horizontal_dimension := 4096:
 	set(new_horizontal_dimension):
 		horizontal_dimension = new_horizontal_dimension
 		_is_initial_spectrum_changed = true

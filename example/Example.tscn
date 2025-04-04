@@ -29,10 +29,10 @@ noise = SubResource("FastNoiseLite_18r8k")
 script = ExtResource("7_xa10r")
 simulation_enabled = true
 material = ExtResource("5_0jjw4")
-simulation_frameskip = 1
+simulation_frameskip = 0
 heightmap_sync_frameskip = 0
-fft_resolution = 128
-horizontal_dimension = 256
+fft_resolution = 512
+horizontal_dimension = 2048
 time_scale = 1.1
 cascade_range = Vector2(0, 1)
 cascade_scale = 1.0
@@ -207,7 +207,8 @@ underwater_post_proc = NodePath("PostProcessingLayer/UnderwaterPostProc")
 [node name="QuadTree3D" type="Node3D" parent="."]
 script = ExtResource("5_li4kg")
 lod_level = 7
-quad_size = 32768.0
+quad_size = 32760.0
+mesh_vertex_resolution = 512
 ranges = Array[float]([250.0, 500.0, 1900.0, 3800.0, 7600.0, 15200.0, 30400.0, 60800.0])
 material = ExtResource("5_0jjw4")
 
@@ -310,8 +311,10 @@ player_camera = NodePath("../MotorVesselBody3D/Camera3D")
 custom_minimum_size = Vector2(256, 256)
 offset_right = 40.0
 offset_bottom = 40.0
+expand_mode = 1
 
 [node name="Displacement_cascade1" type="TextureRect" parent="CanvasLayer"]
+visible = false
 custom_minimum_size = Vector2(256, 256)
 offset_left = 288.0
 offset_right = 544.0

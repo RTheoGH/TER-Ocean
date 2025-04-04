@@ -24,7 +24,7 @@ func _process(_delta):
 	
 	if not _debug_textures_initialized and ocean.ocean.initialized:
 		displacement_cascade0_view.texture = ocean.ocean.get_waves_texture()
-		displacement_cascade1_view.texture = ocean.ocean.get_tb_waves_texture()
+		#displacement_cascade1_view.texture = ocean.ocean.get_tb_waves_texture()
 		#displacement_cascade2_view.texture = ocean.ocean.get_waves_texture(2)
 		_debug_textures_initialized = true
 

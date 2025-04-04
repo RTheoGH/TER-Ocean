@@ -139,9 +139,7 @@ vec3 HDR(vec3 color, float e) {
 void vertex() {
 	// Vertex Offset
 	vec3 displacement;
-	displacement = get_displacement_tiling(VERTEX.xz);
-
-
+	displacement = get_displacement_tiling_gaussian(VERTEX.xz);
 
 	vec4 nj = get_normals_jacobian(VERTEX.xz, displacement);
 	NORMAL = nj.xyz * normal_factor;
