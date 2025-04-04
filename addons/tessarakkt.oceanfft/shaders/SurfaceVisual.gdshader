@@ -122,6 +122,10 @@ varying float wave_height;
 varying float foam_mix_factor;
 varying float foam_specular_factor;
 
+//Get the LEAN Mapping values from the compute shader
+uniform sampler2D lean_B_texture;
+uniform sampler2D lean_M_texture;
+
 
 vec2 lod_morph(float morph_factor, vec2 grid_pos) {
 	vec2 fracPart = fract(grid_pos.xy * vertex_resolution * 0.5) * 2.0 / vertex_resolution;
@@ -169,7 +173,6 @@ void vertex() {
 	VERTEX.y -= curvation;
 }
 
-
 void fragment() {
 	// Calculate fragments Fresnel factor
 	float fresnel_factor = pow(1.0 - dot(NORMAL, normalize(VIEW)), fresnel_power);
@@ -207,6 +210,35 @@ void fragment() {
 	// Distance Fade
 	float fade_start = view_distance_max * view_fade_start;
 	ALPHA = 1.0 - (clamp(linear_dist, fade_start, view_distance_max) - fade_start) / (view_distance_max - fade_start);
+
+	//LEAN Mapping implementation
+
+	//Calculate "h" in from his implementation
+	vec3 view_dir = normalize(VIEW);
+	vec3 light_dir = normalize(vec3(0.0, 1.0, 0.0)); //placeholder for light direction idk if it works
+	vec3 half_vec = normalize(view_dir + light_dir);
+
+	//get lean textures at the right positions
+	vec2 lean_uv = world_vertex.xz * uv_scale;
+	vec2 B = texture(lean_B_texture, lean_uv).xy;
+	vec3 M = texture(lean_M_texture, lean_uv).xyz;
+
+	//cov + det
+	vec3 cov_matrix = M - vec3(B.x*B.x, B.y*B.y, B.x*B.y);
+	float det = cov_matrix.x * cov_matrix.y - cov_matrix.z * cov_matrix.z;
+
+	//specular term
+	vec2 h_bar = half_vec.xy / half_vec.z - B;
+	float e = (h_bar.x*h_bar.x*cov_matrix.y + h_bar.y*h_bar.y*cov_matrix.x - 2.0*h_bar.x*h_bar.y*cov_matrix.z);
+
+	//convert
+	if(det > 0.0){
+	    float lean_specular = exp(-0.5 * e / sqrt(det));
+	    SPECULAR = lean_specular;
+	}
+	else{
+	    SPECULAR = 0.0;
+	}
 
 	// Misc. PBR Settings
 	ROUGHNESS = foam_mix_factor + 0.02;

@@ -221,7 +221,6 @@ center_of_mass_mode = 1
 center_of_mass = Vector3(0, -5, 0)
 thrust_power_main = 25000.0
 max_rudder_force = 3000.0
-buoyancy_multiplier = 35000.0
 environment = NodePath("..")
 
 [node name="Camera3D" type="Camera3D" parent="MotorVesselBody3D" node_paths=PackedStringArray("reflection_probe")]
@@ -450,10 +449,10 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="LeanMappingLight" type="SpotLight3D" parent="."]
-transform = Transform3D(-0.999788, -0.00864527, 0.0187101, 1.31706e-09, 0.907777, 0.419452, -0.0206109, 0.419363, -0.907585, -1.50708, 431.836, -1562.3)
+transform = Transform3D(-0.999788, -0.00864529, 0.0187101, -0.00409858, 0.973041, 0.230598, -0.0201993, 0.230472, -0.972869, -1.50708, 431.836, -4027.56)
 visible = false
 light_energy = 10.0
-spot_range = 4096.0
+spot_range = 6000.0
 spot_attenuation = 0.04
 spot_angle = 14.33
 
