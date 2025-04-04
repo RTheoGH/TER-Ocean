@@ -207,9 +207,22 @@ func _on_tb_scale_slider_value_changed(value:float) -> void:
 	ocean._tb_scale = value
 	ocean.material.set_shader_parameter("tb_scale", ocean._tb_scale)
 
+func _on_grid_scaling_slider_value_changed(value:float) -> void:
+	ocean.material.set_shader_parameter("grid_scale", value)
 
 
 
-func _on_lod_slider_value_changed(value:float) -> void:
+
+func _on_lodslider_value_changed(value:float) -> void:
 	lod_fake_distance = value
 	ocean.material.set_shader_parameter("lod_fake_distance", lod_fake_distance)
+
+
+func _on_debug_displacement_toggled(toggled_on:bool) -> void:
+	ocean.material.set_shader_parameter("debug_displacement", toggled_on)
+
+
+func _on_debug_normal_toggled(toggled_on:bool) -> void:
+	ocean.material.set_shader_parameter("debug_normal", toggled_on)
+
+

@@ -31,8 +31,8 @@ simulation_enabled = true
 material = ExtResource("5_0jjw4")
 simulation_frameskip = 0
 heightmap_sync_frameskip = 0
-fft_resolution = 512
-horizontal_dimension = 2048
+fft_resolution = 256
+horizontal_dimension = 1024
 time_scale = 1.1
 cascade_range = Vector2(0, 1)
 cascade_scale = 1.0
@@ -60,6 +60,10 @@ shader_parameter/domain_warp_uv_scale = 6.25e-05
 shader_parameter/domain_warp_strength = 1500.0
 shader_parameter/camera_position_world = null
 shader_parameter/tb_scale = 1.0
+shader_parameter/grid_scale = 1.0
+shader_parameter/lod_fake_distance = 0.0
+shader_parameter/debug_normal = false
+shader_parameter/debug_displacement = true
 shader_parameter/splash_subparticles = 10
 shader_parameter/splash_jacobian_limit = -3.0
 shader_parameter/splash_coverage = 1.0
@@ -99,6 +103,10 @@ shader_parameter/domain_warp_uv_scale = 6.25e-05
 shader_parameter/domain_warp_strength = 1500.0
 shader_parameter/camera_position_world = null
 shader_parameter/tb_scale = 1.0
+shader_parameter/grid_scale = 1.0
+shader_parameter/lod_fake_distance = 0.0
+shader_parameter/debug_normal = false
+shader_parameter/debug_displacement = true
 shader_parameter/splash_subparticles = 10
 shader_parameter/splash_jacobian_limit = -3.0
 shader_parameter/splash_coverage = 1.0
@@ -208,7 +216,6 @@ underwater_post_proc = NodePath("PostProcessingLayer/UnderwaterPostProc")
 script = ExtResource("5_li4kg")
 lod_level = 7
 quad_size = 32760.0
-mesh_vertex_resolution = 512
 ranges = Array[float]([250.0, 500.0, 1900.0, 3800.0, 7600.0, 15200.0, 30400.0, 60800.0])
 material = ExtResource("5_0jjw4")
 
@@ -366,26 +373,52 @@ layout_mode = 2
 button_pressed = true
 text = "LOD Cull Enabled"
 
-[node name="TBEnabled" type="CheckButton" parent="CanvasLayer/PanelContainer/VBoxContainer"]
-layout_mode = 2
-text = "Tiling and Blending"
-
 [node name="DebugEnabled" type="CheckButton" parent="CanvasLayer/PanelContainer/VBoxContainer"]
 layout_mode = 2
-button_pressed = true
 text = "debug view"
+
+[node name="debugDisplacement" type="CheckButton" parent="CanvasLayer/PanelContainer/VBoxContainer"]
+layout_mode = 2
+button_pressed = true
+text = "debug displacement"
+
+[node name="debugNormal" type="CheckButton" parent="CanvasLayer/PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "debug normal
+
+"
 
 [node name="tbScaleLabel" type="Label" parent="CanvasLayer/PanelContainer/VBoxContainer"]
 layout_mode = 2
-text = "Tiling and Blending UV scaling
+text = "UV scaling
 "
 
 [node name="tbScaleSlider" type="HSlider" parent="CanvasLayer/PanelContainer/VBoxContainer"]
 layout_mode = 2
 min_value = 1.0
-max_value = 40.0
+max_value = 50.0
 step = 0.05
 value = 20.0
+
+[node name="GridScalingLabel" type="Label" parent="CanvasLayer/PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "Grid scaling"
+
+[node name="GridScalingSlider" type="HSlider" parent="CanvasLayer/PanelContainer/VBoxContainer"]
+layout_mode = 2
+min_value = 1.0
+max_value = 50.0
+step = 0.05
+value = 5.0
+
+[node name="lodlabel" type="Label" parent="CanvasLayer/PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "lod fake distance
+"
+
+[node name="lodslider" type="HSlider" parent="CanvasLayer/PanelContainer/VBoxContainer"]
+layout_mode = 2
+max_value = 50000.0
 
 [node name="FrameskipLabel" type="Label" parent="CanvasLayer/PanelContainer/VBoxContainer"]
 layout_mode = 2
@@ -484,9 +517,12 @@ grow_vertical = 2
 
 [connection signal="toggled" from="CanvasLayer/PanelContainer/VBoxContainer/SimulateEnabled" to="CanvasLayer" method="_on_simulate_enabled_toggled"]
 [connection signal="toggled" from="CanvasLayer/PanelContainer/VBoxContainer/CullEnabled" to="CanvasLayer" method="_on_cull_enabled_toggled"]
-[connection signal="toggled" from="CanvasLayer/PanelContainer/VBoxContainer/TBEnabled" to="." method="_on_tb_enabled_toggled"]
 [connection signal="toggled" from="CanvasLayer/PanelContainer/VBoxContainer/DebugEnabled" to="." method="_on_debug_enabled_toggled"]
+[connection signal="toggled" from="CanvasLayer/PanelContainer/VBoxContainer/debugDisplacement" to="." method="_on_debug_displacement_toggled"]
+[connection signal="toggled" from="CanvasLayer/PanelContainer/VBoxContainer/debugNormal" to="." method="_on_debug_normal_toggled"]
 [connection signal="value_changed" from="CanvasLayer/PanelContainer/VBoxContainer/tbScaleSlider" to="." method="_on_tb_scale_slider_value_changed"]
+[connection signal="value_changed" from="CanvasLayer/PanelContainer/VBoxContainer/GridScalingSlider" to="." method="_on_grid_scaling_slider_value_changed"]
+[connection signal="value_changed" from="CanvasLayer/PanelContainer/VBoxContainer/lodslider" to="." method="_on_lodslider_value_changed"]
 [connection signal="value_changed" from="CanvasLayer/PanelContainer/VBoxContainer/Frameskip" to="CanvasLayer" method="_on_frameskip_value_changed"]
 [connection signal="value_changed" from="CanvasLayer/PanelContainer/VBoxContainer/HeightmapSyncFrameskip" to="CanvasLayer" method="_on_heightmap_sync_frameskip_value_changed"]
 [connection signal="value_changed" from="CanvasLayer/PanelContainer/VBoxContainer/PlanetaryCurve" to="CanvasLayer" method="_on_planetary_curve_value_changed"]
