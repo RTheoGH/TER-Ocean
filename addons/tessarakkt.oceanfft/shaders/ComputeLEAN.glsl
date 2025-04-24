@@ -14,7 +14,7 @@ layout(set = 0 ,binding = 31 , rgba32f) uniform image2D u_normals_input;
 
 //M and B (maybe change from sampler to image but idk LeWhatdatmean yet)
 layout(set = 0 , binding = 32 , rg32f) uniform image2D u_B_output; //rg cuz xy
-layout(set = 0 , binding = 33 , rg32f) uniform image2D u_M_output; //rgv cuz xyz
+layout(set = 0 , binding = 33 , rgba32f) uniform image2D u_M_output; //rgv cuz xyz
 
 void main(){
     //gets the coordinates of a pixel from our texture

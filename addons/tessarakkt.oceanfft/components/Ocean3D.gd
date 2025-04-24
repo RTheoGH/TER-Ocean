@@ -432,12 +432,28 @@ func get_waves() -> Image:
 ## Get the wave displacement map of a single cascade as a Texture2DRD.
 func get_waves_texture() -> Texture2DRD:
 	assert(initialized, "Ocean3D not initialized")
+	print(_waves_texture)
 	return _waves_texture
 
-##ANDREW : get the lean map texture ???
-func get_lean_texture() -> Texture2DRD:
+func get_lean_normal_texture() -> Texture2DRD:
 	assert(initialized, "Ocean3D not initialized")
-	return _lean_normal_texture
+	return _normal_texture
+
+##ANDREW : get the lean map texture ???
+func get_lean_b_texture() -> Texture2DRD:
+	assert(initialized, "Ocean3D not initialized")
+	print(_lean_b_texture)
+
+	var texture_data = _rd.texture_get_data(_lean_b_tex, 0)
+	var image = Image.create_from_data(fft_resolution, fft_resolution, false, Image.FORMAT_RGF, texture_data)
+	for y in range(image.get_height()):
+		for x in range(image.get_width()):
+			var pixel = image.get_pixel(x, y)
+			print("Pixel at (", x, ",", y, "): ", pixel)
+	
+	return _lean_b_texture
+
+##ANDREW : get the lean map texture ???
 
 
 func _pack_initial_spectrum_settings() -> PackedByteArray:
@@ -942,9 +958,9 @@ func _simulate(delta:float, sync_heightmap:bool) -> void:
 	_lean_m_uniform.binding = Binding.LEAN_M
 
 	uniform_set = _rd.uniform_set_create([
-		_lean_normal_uniform,
-		_lean_b_uniform,
-		_lean_m_uniform
+	_normal_uniform,
+	_lean_b_uniform,
+	_lean_m_uniform
 	], _lean_shader, UNIFORM_SET)
 
 	# Create Compute List
@@ -958,14 +974,6 @@ func _simulate(delta:float, sync_heightmap:bool) -> void:
 	_rd.free_rid(uniform_set)
 
 
-	uniform_set = _rd.uniform_set_create([
-	_normal_uniform,
-	_lean_b_uniform,
-	_lean_m_uniform
-	], _lean_shader, UNIFORM_SET)
-
-
-	
 
 	## This needs to get updated outside the cascade iteration loop
 	_is_ping_phase = not _is_ping_phase

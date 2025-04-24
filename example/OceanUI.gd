@@ -43,15 +43,15 @@ func _process(_delta):
 	ocean_fps_view.text = "%.1f Ocean TPS" % [fps / (ocean.ocean.simulation_frameskip + 1)]
 	
 	if not _debug_textures_initialized and ocean.ocean.initialized:
-		displacement_cascade0_view.texture = ocean.ocean.get_waves_texture()
-		#displacement_cascade1_view.texture = ocean.ocean.get_waves_texture(1)
-		#displacement_cascade2_view.texture = ocean.ocean.get_waves_texture(2)
+		#displacement_cascade0_view.texture = ocean.ocean.get_waves_texture()
+		displacement_cascade0_view.texture = ocean.ocean.get_lean_b_texture()
+		#displacement_cascade0_view.texture = ocean.ocean.get_lean_normal_texture()
 		_debug_textures_initialized = true
 
 
 #TODO : deactivate LEAN Mapping light when the rest are activated
 func _input(event:InputEvent) -> void:
-	if event.is_action_pressed("camera_mode_free") and free_camera != null:
+	if event.is_action_pressed("camera_mode_free") and free_camera != null:	
 		free_camera.make_current()
 	
 	if event.is_action_pressed("camera_mode_ship") and player_camera != null:

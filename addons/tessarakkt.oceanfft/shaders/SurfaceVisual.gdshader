@@ -214,9 +214,8 @@ void fragment() {
 	//LEAN Mapping implementation
 
 	//Calculate "h" in from his implementation
-	vec3 view_dir = normalize(VIEW);
-	vec3 light_dir = normalize(vec3(0.0, 1.0, 0.0)); //placeholder for light direction idk if it works
-	vec3 half_vec = normalize(view_dir + light_dir);
+	vec3 light_dir = vec3(0.0, 1.0, 0.0); //placeholder for light direction idk if it works
+	vec3 half_vec = normalize(VIEW + light_dir);
 
 	//get lean textures at the right positions
 	vec2 lean_uv = world_vertex.xz * uv_scale;
@@ -246,6 +245,13 @@ void fragment() {
 	SPECULAR = pbr_specular_strength * foam_specular_factor * fresnel_factor + pbr_specular_offset;
 
 	wave_height = world_vertex.y;
+
+	ROUGHNESS = 0.0;
+	METALLIC = 0.0;
+	SPECULAR = 0.0;
+
+	//ALBEDO = vec3(B/2.0, 0.); //display b map
+	ALBEDO = NORMAL; // Display the normal map as colors
 }
 
 

@@ -21,7 +21,7 @@ void main() {
 
     //FIXME : i'm just using this as a placeholder to work with ivec2 instead of vec2
     ivec2 coord = ivec2(gl_GlobalInvocationID.xy);
-    vec2 uv = (vec2(coord) + 0.5) / vec2(imageSize(displacement_tex));
+    //vec2 uv = (vec2(coord) + 0.5) / vec2(imageSize(displacement_tex));
     float offset = 1.0;
 
     vec3 displacement = vec3(0.0, imageLoad(displacement_tex, coord).y, 0.0);
