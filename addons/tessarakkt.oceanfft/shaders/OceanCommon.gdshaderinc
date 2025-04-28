@@ -127,7 +127,7 @@ vec3 get_displacement_tiling(vec2 uv)
 }
 
 vec3 get_displacement_tiling_gaussian(vec2 uv)
-{	
+{
 	vec2 grid_uv = uv * grid_scale * 0.0000625;
 	uv *=  tb_scale * 0.0000625;
 

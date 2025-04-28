@@ -43,6 +43,7 @@ shader_parameter/amplitude_scale_max = 1.0
 shader_parameter/amplitude_scale_fade_distance = 12000.0
 shader_parameter/tb_enabled = true
 shader_parameter/tb_scale = 1.0
+shader_parameter/grid_scale = 5.0
 shader_parameter/lod_fake_distance = 0.0
 shader_parameter/debug_normal = false
 shader_parameter/debug_displacement = true

@@ -243,11 +243,6 @@ var _gaussian_average_uniform: RDUniform = RDUniform.new()
 var _waves_image:Image
 var _waves_texture:Texture2DRD
 
-var _tb_waves_image:Image
-var _tb_waves_texture:Texture2DRD
-
-var _tb_waves_uniform:RDUniform
-var _tb_waves_tex:RID
 
 var _is_ping_phase := true
 
@@ -406,11 +401,6 @@ func get_waves() -> Image:
 func get_waves_texture() -> Texture2DRD:
 	assert(initialized, "Ocean3D not initialized")
 	return _waves_texture
-
-func get_tb_waves_texture() -> Texture2DRD:
-	assert(initialized, "Ocean3D not initialized")
-	return _tb_waves_texture
-
 
 
 func _pack_initial_spectrum_settings() -> PackedByteArray:
@@ -578,28 +568,18 @@ func _initialize_simulation() -> void:
 	_spectrum_uniform.binding = Binding.SPECTRUM
 	_spectrum_uniform.add_id(_spectrum_tex)
 	
-	## on initialise la texture a 0 
-	_tb_waves_tex = _rd.texture_create(_fmt_rg32f,  RDTextureView.new(), [initial_image_rgf.get_data()])
-	_tb_waves_uniform = RDUniform.new()
-	_tb_waves_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_IMAGE
-	_tb_waves_uniform.binding = Binding.OUTPUT
-	_tb_waves_uniform.add_id(_tb_waves_tex)
+
 	
 	## Bind the displacement map cascade texture to the visual shader
 	_waves_image = Image.create(fft_resolution, fft_resolution, false, Image.FORMAT_RGF)
 	_waves_texture = Texture2DRD.new()
 	_waves_texture.texture_rd_rid = _spectrum_tex
 	
-	_tb_waves_image = Image.create(fft_resolution, fft_resolution, false, Image.FORMAT_RGF)
-	_tb_waves_texture = Texture2DRD.new()
-	_tb_waves_texture.texture_rd_rid = _tb_waves_tex
-	
 	
 	material.set_shader_parameter("cascade_displacements", _waves_texture)
 	material.set_shader_parameter("cascade_uv_scales", cascade_scale)
 	material.set_shader_parameter("uv_scale", _uv_scale)
 	
-	material.set_shader_parameter("tb_displacement_map", _tb_waves_image)
 	
 	#### Compile & Initialize FFT Shaders
 	############################################################################
@@ -824,7 +804,7 @@ func _simulate(delta:float, sync_heightmap:bool) -> void:
 
 		#### Compute Gaussian Texture
 		############################################################################
-
+		'''
 		var shader_file = load("res://addons/tessarakkt.oceanfft/shaders/Gaussian.glsl")
 		var spirv : RDShaderSPIRV = shader_file.get_spirv()
 		#print(spirv.compile_error_compute)		
@@ -854,7 +834,7 @@ func _simulate(delta:float, sync_heightmap:bool) -> void:
  
 		_rd.free_rid(uniform_set)
  
-
+		'''
 
  
 
@@ -906,7 +886,6 @@ func _simulate(delta:float, sync_heightmap:bool) -> void:
 		if sync_heightmap:
 
 			_waves_image.set_data(fft_resolution, fft_resolution, false, Image.FORMAT_RGF, _rd.texture_get_data(_spectrum_tex, 0))
-			_tb_waves_image.set_data(fft_resolution, fft_resolution, false, Image.FORMAT_RGF, _rd.texture_get_data(_tb_waves_tex, 0))
 			
 	## This needs to get updated outside the cascade iteration loop
 	_is_ping_phase = not _is_ping_phase

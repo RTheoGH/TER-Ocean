@@ -1,9 +1,8 @@
 extends CanvasLayer
 
 
-@onready var displacement_cascade0_view:TextureRect = $Displacement_cascade0
-@onready var displacement_cascade1_view:TextureRect = $Displacement_cascade1
-@onready var displacement_cascade2_view:TextureRect = $Displacement_cascade2
+@onready var debug_texture_rect:TextureRect = $DebugTextureRect0
+@onready var displacement_cascade1_view:TextureRect = $DebugTextureRect1
 @onready var settings_view:PanelContainer = $PanelContainer
 @onready var fps_view:Label = $VBoxContainer/FPS
 @onready var ocean_fps_view:Label = $VBoxContainer/OceanFPS
@@ -23,7 +22,7 @@ func _process(_delta):
 	ocean_fps_view.text = "%.1f Ocean TPS" % [fps / (ocean.ocean.simulation_frameskip + 1)]
 	
 	if not _debug_textures_initialized and ocean.ocean.initialized:
-		displacement_cascade0_view.texture = ocean.ocean.get_waves_texture()
+		debug_texture_rect.texture = ocean.ocean.get_waves_texture()
 		#displacement_cascade1_view.texture = ocean.ocean.get_tb_waves_texture()
 		#displacement_cascade2_view.texture = ocean.ocean.get_waves_texture(2)
 		_debug_textures_initialized = true
@@ -37,17 +36,17 @@ func _input(event:InputEvent) -> void:
 		player_camera.make_current()
 	
 	if event.is_action_pressed("toggle_ocean_debug"):
-		displacement_cascade0_view.visible = not displacement_cascade0_view.visible
-		displacement_cascade1_view.visible = displacement_cascade0_view.visible
-		displacement_cascade2_view.visible = displacement_cascade0_view.visible
-		settings_view.visible = displacement_cascade0_view.visible
+		debug_texture_rect.visible = not debug_texture_rect.visible
+
+
+		settings_view.visible = debug_texture_rect.visible
 		
-		if displacement_cascade0_view.visible:
+		if debug_texture_rect.visible:
 			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 		else:
 			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	
-	get_viewport().get_camera_3d().motion_enabled = not displacement_cascade0_view.visible
+	get_viewport().get_camera_3d().motion_enabled = not debug_texture_rect.visible
 
 
 func _on_frameskip_value_changed(value:float) -> void:
