@@ -17,7 +17,10 @@ enum Binding {
 	INPUT = 27,
 	OUTPUT = 28,
 	TB_DISPLACEMENT = 29,
-	GAUSSIAN_AVERAGE = 30
+	GAUSSIAN_AVERAGE = 30,
+	LEAN_NORMAL = 31,
+	LEAN_B = 32,
+	LEAN_M = 33,
 }
 
 
@@ -244,6 +247,31 @@ var _waves_image:Image
 var _waves_texture:Texture2DRD
 
 
+## lean mapping normal 
+var _lean_normal_shader:RID
+var _lean_normal_pipeline:RID
+var _lean_normal_settings_buffer:RID
+var _lean_normal_settings_uniform := RDUniform.new()
+var _lean_normal_uniform:RDUniform
+var _lean_normal_tex : RID
+var _lean_normal_image:Image
+var _lean_normal_texture:Texture2DRD
+
+## lean mapping B et M
+var _lean_BM_shader:RID
+var _lean_BM_pipeline:RID
+var _lean_BM_settings_buffer:RID
+var _lean_BM_settings_uniform := RDUniform.new()
+var _lean_B_uniform:RDUniform
+var _lean_M_uniform:RDUniform
+var _lean_B_tex:RID
+var _lean_M_tex:RID
+var _lean_B_image:Image
+var _lean_M_image:Image
+var _lean_B_texture:Texture2DRD
+var _lean_M_texture:Texture2DRD
+
+
 var _is_ping_phase := true
 
 var _frameskip := 0
@@ -402,6 +430,29 @@ func get_waves_texture() -> Texture2DRD:
 	assert(initialized, "Ocean3D not initialized")
 	return _waves_texture
 
+func get_lean_normal() -> Image:
+	assert(initialized, "Ocean3D not initialized")
+	return _lean_normal_image
+
+func get_lean_normal_texture() -> Texture2DRD:
+	assert(initialized, "Ocean3D not initialized")
+	return _lean_normal_texture
+
+func get_lean_B() -> Image:
+	assert(initialized, "Ocean3D not initialized")
+	return _lean_B_image
+
+func get_lean_B_texture() -> Texture2DRD:
+	assert(initialized, "Ocean3D not initialized")
+	return _lean_B_texture
+
+func get_lean_M() -> Image:
+	assert(initialized, "Ocean3D not initialized")
+	return _lean_M_image
+
+func get_lean_M_texture() -> Texture2DRD:
+	assert(initialized, "Ocean3D not initialized")
+	return _lean_M_texture
 
 func _pack_initial_spectrum_settings() -> PackedByteArray:
 	var settings_bytes = PackedInt32Array([fft_resolution, horizontal_dimension * cascade_scale]).to_byte_array()
@@ -567,18 +618,81 @@ func _initialize_simulation() -> void:
 	_spectrum_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_IMAGE
 	_spectrum_uniform.binding = Binding.SPECTRUM
 	_spectrum_uniform.add_id(_spectrum_tex)
+
+	## Lean mapping init
+
+	#lean normal
+
+	shader_file = load("res://addons/tessarakkt.oceanfft/shaders/ComputeNormalMap.glsl")
+	_lean_normal_shader = _rd.shader_create_from_spirv(shader_file.get_spirv())
+	_lean_normal_pipeline = _rd.compute_pipeline_create(_lean_normal_shader)
+
+	_lean_normal_settings_buffer = _rd.storage_buffer_create(settings_bytes.size(), settings_bytes)
+	_lean_normal_settings_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
+	_lean_normal_settings_uniform.binding = Binding.SETTINGS
+	_lean_normal_settings_uniform.add_id(_lean_normal_settings_buffer)
+
+	_lean_normal_image = Image.create(fft_resolution, fft_resolution, false, Image.FORMAT_RGBAF)
 	
 
+	_lean_normal_tex = _rd.texture_create(_fmt_rgba32f, RDTextureView.new(), [_lean_normal_image.get_data()])
+	_lean_normal_uniform = RDUniform.new()
+	_lean_normal_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_IMAGE
+	_lean_normal_uniform.binding = Binding.LEAN_NORMAL
+	_lean_normal_uniform.add_id(_lean_normal_tex)
+
+	_lean_normal_texture = Texture2DRD.new()
+	_lean_normal_texture.texture_rd_rid = _lean_normal_tex
+
+	# Lean B et M 
+	shader_file = load("res://addons/tessarakkt.oceanfft/shaders/ComputeLeanBM.glsl")
+	_lean_BM_shader = _rd.shader_create_from_spirv(shader_file.get_spirv())
+	_lean_BM_pipeline = _rd.compute_pipeline_create(_lean_BM_shader)
+
+	_lean_BM_settings_buffer = _rd.storage_buffer_create(settings_bytes.size(), settings_bytes)
+	_lean_BM_settings_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
+	_lean_BM_settings_uniform.binding = Binding.SETTINGS
+	_lean_BM_settings_uniform.add_id(_lean_BM_settings_buffer)
+
+	# B
+	_lean_B_image = Image.create(fft_resolution, fft_resolution, false, Image.FORMAT_RF)
+
+	_lean_B_tex = _rd.texture_create(_fmt_r32f, RDTextureView.new(), [_lean_B_image.get_data()])
+	_lean_B_uniform = RDUniform.new()
+	_lean_B_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_IMAGE
+	_lean_B_uniform.binding = Binding.LEAN_B
+	_lean_B_uniform.add_id(_lean_B_tex)
+
+	_lean_B_texture = Texture2DRD.new()
+	_lean_B_texture.texture_rd_rid = _lean_B_tex
+
+	# M
+	_lean_M_image = Image.create(fft_resolution, fft_resolution, false, Image.FORMAT_RGBAF)
+
+	_lean_M_tex = _rd.texture_create(_fmt_rgba32f, RDTextureView.new(), [_lean_M_image.get_data()])
+	_lean_M_uniform = RDUniform.new()
+	_lean_M_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_IMAGE
+	_lean_M_uniform.binding = Binding.LEAN_M
+	_lean_M_uniform.add_id(_lean_M_tex)
+	
+	_lean_M_texture = Texture2DRD.new()
+	_lean_M_texture.texture_rd_rid = _lean_M_tex
 	
 	## Bind the displacement map cascade texture to the visual shader
 	_waves_image = Image.create(fft_resolution, fft_resolution, false, Image.FORMAT_RGF)
 	_waves_texture = Texture2DRD.new()
 	_waves_texture.texture_rd_rid = _spectrum_tex
+
+
 	
 	
 	material.set_shader_parameter("cascade_displacements", _waves_texture)
 	material.set_shader_parameter("cascade_uv_scales", cascade_scale)
 	material.set_shader_parameter("uv_scale", _uv_scale)
+
+	material.set_shader_parameter("lean_normal_texture", _lean_normal_texture)
+	material.set_shader_parameter("lean_B_texture", _lean_B_texture)
+	material.set_shader_parameter("lean_M_texture", _lean_M_texture)
 	
 	
 	#### Compile & Initialize FFT Shaders
@@ -609,7 +723,11 @@ func _initialize_simulation() -> void:
 	_sub_pong_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_IMAGE
 	_sub_pong_uniform.add_id(_sub_pong_tex)
 	
+
+
+
 	initialized = true
+
 
 
 ## Simulate a single iteration of the ocean. The resulting displacement map
@@ -618,274 +736,176 @@ func _initialize_simulation() -> void:
 ## shaders operate on. The image is stored in CPU RAM and is only updated when
 ## sync_heightmap is true.
 ## This must be called via RenderingServer.call_on_render_thread().
-func _simulate(delta:float, sync_heightmap:bool) -> void:
-	var uniform_set:RID
-	var compute_list:int
-	var settings_bytes:PackedByteArray
-	
-	#### Update Initial Spectrum
-	########################################################################
-	## Only executed on first frame, or if Wind, FFT Resolution, or
-	## Horizontal Dimension inputs are changed, as the output is constant
-	## for a given set of inputs. The Initial Spectrum is cached in VRAM. It
-	## is not returned to CPU RAM.
-
+func _simulate(delta: float, sync_heightmap: bool) -> void:
 	if _is_initial_spectrum_changed:
-		## Update Settings Buffer
-		settings_bytes = _pack_initial_spectrum_settings()
-		if _rd.buffer_update(_initial_spectrum_settings_buffer, 0, settings_bytes.size(), settings_bytes) != OK:
-			print("error updating initial spectrum settings buffer")
-		
-		## Build Uniform Set
-		uniform_set = _rd.uniform_set_create([
-				_initial_spectrum_settings_uniform,
-				_initial_spectrum_uniform], _initial_spectrum_shader, UNIFORM_SET)
-		
-		## Create Compute List
-		compute_list = _rd.compute_list_begin()
-		_rd.compute_list_bind_compute_pipeline(compute_list, _initial_spectrum_pipeline)
-		_rd.compute_list_bind_uniform_set(compute_list, uniform_set, UNIFORM_SET)
-		@warning_ignore("integer_division")
-		_rd.compute_list_dispatch(compute_list, fft_resolution / WORK_GROUP_DIM, fft_resolution / WORK_GROUP_DIM, 1)
-		_rd.compute_list_end()
-		
-		_rd.free_rid(uniform_set)
-		
-		## Prevent this from running again until the Wind, FFT Resolution, or
-		## Horizontal Dimension inputs are changed. The condition ensures it
-		## runs for all cascades.
-		#if cascade == cascade_ranges.size() - 1:
-		#	_is_initial_spectrum_changed = false
-	
-		#### Execute Phase Shader; Updates Ping Pong Buffers
-		########################################################################
-		
-		## Leave the textures in place in VRAM, and just switch the binding
-		## points.
-		if _is_ping_phase:
-			_ping_uniform.binding = Binding.PING
-			_pong_uniform.binding = Binding.PONG
-		
-		else:
-			_ping_uniform.binding = Binding.PONG
-			_pong_uniform.binding = Binding.PING
-		
-		## Update Settings Buffer
-		settings_bytes = _pack_phase_settings(delta * time_scale)
-		if _rd.buffer_update(_phase_settings_buffer, 0, settings_bytes.size(), settings_bytes) != OK:
-			print("error updating phase settings buffer")
-		
-		## Build Uniform Set
-		uniform_set = _rd.uniform_set_create([
-				_phase_settings_uniform,
-				_ping_uniform,
-				_pong_uniform], _phase_shader, UNIFORM_SET)
-		
-		## Create Compute List
-		compute_list = _rd.compute_list_begin()
-		_rd.compute_list_bind_compute_pipeline(compute_list, _phase_pipeline)
-		_rd.compute_list_bind_uniform_set(compute_list, uniform_set, UNIFORM_SET)
-		@warning_ignore("integer_division")
-		_rd.compute_list_dispatch(compute_list, fft_resolution / WORK_GROUP_DIM, fft_resolution / WORK_GROUP_DIM, 1)
-		_rd.compute_list_end()
-		
-		_rd.free_rid(uniform_set)
-	
-		#### Execute Spectrum Shader Cascades
-		########################################################################
-		
-		## Update Settings Buffer
-		settings_bytes = _pack_spectrum_settings()
-		if _rd.buffer_update(_spectrum_settings_buffer, 0, settings_bytes.size(), settings_bytes) != OK:
-			print("error updating spectrum settings buffer")
-		
-		## Ensure the Spectrum texture binding is correct from previous frames.
-		## It gets changed later on in _simulate().
-		_spectrum_uniform.binding = Binding.SPECTRUM
-		
-		## Build Uniform Set
-		uniform_set = _rd.uniform_set_create([
-				_spectrum_settings_uniform,
-				_initial_spectrum_uniform,
-				_spectrum_uniform,
-				_ping_uniform,
-				_pong_uniform], _spectrum_shader, UNIFORM_SET)
-		
-		## Create Compute List
-		compute_list = _rd.compute_list_begin()
-		_rd.compute_list_bind_compute_pipeline(compute_list, _spectrum_pipeline)
-		_rd.compute_list_bind_uniform_set(compute_list, uniform_set, UNIFORM_SET)
-		@warning_ignore("integer_division")
-		_rd.compute_list_dispatch(compute_list, fft_resolution / WORK_GROUP_DIM, fft_resolution / WORK_GROUP_DIM, 1)
-		_rd.compute_list_end()
-		
-		_rd.free_rid(uniform_set)
-	
-		#### Execute Horizontal FFT Shader Cascades
-		########################################################################
-		
-		var is_sub_ping_phase := true
-		var p := 1
-		while p < fft_resolution:
-			## Leave the textures in place in VRAM, and just switch the binding
-			## points.
-			if is_sub_ping_phase:
-				_spectrum_uniform.binding = Binding.INPUT
-				_sub_pong_uniform.binding = Binding.OUTPUT
-			
-			else:
-				_spectrum_uniform.binding = Binding.OUTPUT
-				_sub_pong_uniform.binding = Binding.INPUT
-			
-			## Update Settings Buffer
-			settings_bytes = _pack_fft_settings(p)
-			if _rd.buffer_update(_fft_settings_buffer, 0, settings_bytes.size(), settings_bytes) != OK:
-				print("error updating horizontal FFT settings buffer")
-			
-			## Build Uniform Set
-			uniform_set = _rd.uniform_set_create([
-					_fft_settings_uniform,
-					_sub_pong_uniform,
-					_spectrum_uniform], _fft_horizontal_shader, UNIFORM_SET)
-			
-			## Create Compute List
-			compute_list = _rd.compute_list_begin()
-			_rd.compute_list_bind_compute_pipeline(compute_list, _fft_horizontal_pipeline)
-			_rd.compute_list_bind_uniform_set(compute_list, uniform_set, UNIFORM_SET)
-			_rd.compute_list_dispatch(compute_list, fft_resolution, 1, 1)
-			_rd.compute_list_end()
-			
-			_rd.free_rid(uniform_set)
-			
-			p <<= 1
-			is_sub_ping_phase = not is_sub_ping_phase
-		
-		#### Execute Vertical FFT Shader Cascades
-		########################################################################
-		
-		p = 1
-		while p < fft_resolution:
-			## Leave the textures in place in VRAM, and just switch the binding
-			## points.
-			if is_sub_ping_phase:
-				_spectrum_uniform.binding = Binding.INPUT
-				_sub_pong_uniform.binding = Binding.OUTPUT
-			
-			else:
-				_spectrum_uniform.binding = Binding.OUTPUT
-				_sub_pong_uniform.binding = Binding.INPUT
-			
-			## Update Settings Buffer
-			settings_bytes = _pack_fft_settings(p)
-			if _rd.buffer_update(_fft_settings_buffer, 0, settings_bytes.size(), settings_bytes) != OK:
-				print("error updating vertical FFT settings buffer")
-			
-			## Build Uniform Set
-			uniform_set = _rd.uniform_set_create([
-					_fft_settings_uniform,
-					_sub_pong_uniform,
-					_spectrum_uniform], _fft_vertical_shader, UNIFORM_SET)
-			
-			## Create Compute List
-			compute_list = _rd.compute_list_begin()
-			_rd.compute_list_bind_compute_pipeline(compute_list, _fft_vertical_pipeline)
-			_rd.compute_list_bind_uniform_set(compute_list, uniform_set, UNIFORM_SET)
-			_rd.compute_list_dispatch(compute_list, fft_resolution, 1, 1)
-			_rd.compute_list_end()
-			
-			_rd.free_rid(uniform_set)
-			
-			p <<= 1
-			is_sub_ping_phase = not is_sub_ping_phase
-		
-		## Retrieve the displacement map from the Spectrum texture, and store it
-		## CPU side for use by buoyancy and wave interaction systems.
+		_run_initial_spectrum_pass()
+	_run_phase_pass(delta)
+	_run_spectrum_pass()
+	_run_fft_passes()
 
+	_run_lean_normal_pass()
+	_run_lean_mapping_pass()
 
-		#### Compute Gaussian Texture
-		############################################################################
-		'''
-		var shader_file = load("res://addons/tessarakkt.oceanfft/shaders/Gaussian.glsl")
-		var spirv : RDShaderSPIRV = shader_file.get_spirv()
-		#print(spirv.compile_error_compute)		
-		_tb_shader = _rd.shader_create_from_spirv(shader_file.get_spirv())
-		
-		_tb_pipeline = _rd.compute_pipeline_create(_tb_shader)
-
-		_spectrum_uniform.binding = Binding.INPUT
-		_tb_waves_uniform.binding = Binding.OUTPUT
-		
-	
-
-		uniform_set = _rd.uniform_set_create([
-				_spectrum_uniform,
-				_tb_waves_uniform,
-				], _tb_shader, UNIFORM_SET)
- 
-
-		compute_list = _rd.compute_list_begin()
-		_rd.compute_list_bind_compute_pipeline(compute_list, _tb_pipeline)
-		_rd.compute_list_bind_uniform_set(compute_list, uniform_set, UNIFORM_SET)
- 
-		@warning_ignore("integer_division")
- 
-		_rd.compute_list_dispatch(compute_list, fft_resolution / WORK_GROUP_DIM, fft_resolution / WORK_GROUP_DIM, 1)
-		_rd.compute_list_end()
- 
-		_rd.free_rid(uniform_set)
- 
-		'''
-
- 
-
-		## Retrieve the displacement map from the Spectrum texture, and store it
- 
-
-		## CPU side for use by buoyancy and wave interaction systems.
- 
-
-		
- 
-
-		
- 
-		'''
-		#### Copy the Gaussian texture into the other 
-
-		############################################################################
-
-		## Compile Shader
-
-		shader_file = load("res://addons/tessarakkt.oceanfft/shaders/CopyTexture.glsl")
-		var copy_shader = _rd.shader_create_from_spirv(shader_file.get_spirv())
-		var copy_pipeline = _rd.compute_pipeline_create(copy_shader)
- 
-		_tb_waves_uniform.binding = Binding.INPUT
-		_spectrum_uniform.binding = Binding.OUTPUT
- 
-		## Build Uniform Set
-
-		uniform_set = _rd.uniform_set_create([
-				_tb_waves_uniform,
-				_spectrum_uniform], _tb_shader, UNIFORM_SET)
- 
-		## Create Compute List
-		compute_list = _rd.compute_list_begin()
-		_rd.compute_list_bind_compute_pipeline(compute_list, copy_pipeline)
-		_rd.compute_list_bind_uniform_set(compute_list, uniform_set, UNIFORM_SET)
-
-		@warning_ignore("integer_division")
-
-		_rd.compute_list_dispatch(compute_list, fft_resolution / WORK_GROUP_DIM, fft_resolution / WORK_GROUP_DIM, 1)
- 
-		_rd.compute_list_end()
- 
-		_rd.free_rid(uniform_set)
-		'''
-		
-		if sync_heightmap:
-
-			_waves_image.set_data(fft_resolution, fft_resolution, false, Image.FORMAT_RGF, _rd.texture_get_data(_spectrum_tex, 0))
-			
-	## This needs to get updated outside the cascade iteration loop
 	_is_ping_phase = not _is_ping_phase
+
+
+
+func _run_lean_normal_pass() -> void:
+	#_update_buffer(_lean_normal_settings_buffer, _pack_phase_settings(0.0), "lean normal settings")
+	
+	_spectrum_uniform.binding = Binding.SPECTRUM
+
+	var uniform_set := _create_uniform_set([
+
+		_lean_normal_uniform,
+		_spectrum_uniform
+	], _lean_normal_shader)
+
+	_dispatch_compute(_lean_normal_pipeline, uniform_set, fft_resolution / WORK_GROUP_DIM, fft_resolution / WORK_GROUP_DIM)
+
+	_rd.free_rid(uniform_set)
+
+func _run_lean_mapping_pass() -> void:
+	#_update_buffer(_lean_normal_settings_buffer, _pack_phase_settings(0.0), "lean mapping settings")
+
+	var uniform_set := _create_uniform_set([
+		_lean_normal_uniform,
+		_lean_B_uniform,
+		_lean_M_uniform,
+	], _lean_BM_shader)
+
+	_dispatch_compute(_lean_BM_pipeline, uniform_set, fft_resolution / WORK_GROUP_DIM, fft_resolution / WORK_GROUP_DIM)
+
+	_rd.free_rid(uniform_set)
+
+
+#### Update Initial Spectrum
+########################################################################
+## Only executed on first frame, or if Wind, FFT Resolution, or
+## Horizontal Dimension inputs are changed, as the output is constant
+## for a given set of inputs. The Initial Spectrum is cached in VRAM. It
+## is not returned to CPU RAM.
+func _run_initial_spectrum_pass() -> void:
+	_update_buffer(_initial_spectrum_settings_buffer, _pack_initial_spectrum_settings(), "initial spectrum settings")
+
+	var uniform_set := _create_uniform_set([
+		_initial_spectrum_settings_uniform,
+		_initial_spectrum_uniform
+	], _initial_spectrum_shader)
+
+	_dispatch_compute(_initial_spectrum_pipeline, uniform_set, fft_resolution / WORK_GROUP_DIM, fft_resolution / WORK_GROUP_DIM)
+
+	_rd.free_rid(uniform_set)
+
+#### Execute Phase Shader; Updates Ping Pong Buffers
+########################################################################
+func _run_phase_pass(delta: float) -> void:
+	_swap_ping_pong_bindings()
+
+	_update_buffer(_phase_settings_buffer, _pack_phase_settings(delta * time_scale), "phase settings")
+
+	var uniform_set := _create_uniform_set([
+		_phase_settings_uniform,
+		_ping_uniform,
+		_pong_uniform
+	], _phase_shader)
+
+	_dispatch_compute(_phase_pipeline, uniform_set, fft_resolution / WORK_GROUP_DIM, fft_resolution / WORK_GROUP_DIM)
+
+	_rd.free_rid(uniform_set)
+
+#### Execute Spectrum Shader Cascades
+########################################################################
+func _run_spectrum_pass() -> void:
+	_update_buffer(_spectrum_settings_buffer, _pack_spectrum_settings(), "spectrum settings")
+
+	_spectrum_uniform.binding = Binding.SPECTRUM
+
+	var uniform_set := _create_uniform_set([
+		_spectrum_settings_uniform,
+		_initial_spectrum_uniform,
+		_spectrum_uniform,
+		_ping_uniform,
+		_pong_uniform
+	], _spectrum_shader)
+
+	_dispatch_compute(_spectrum_pipeline, uniform_set, fft_resolution / WORK_GROUP_DIM, fft_resolution / WORK_GROUP_DIM)
+
+	_rd.free_rid(uniform_set)
+
+#### Execute FFT Shaders
+########################################################################
+func _run_fft_passes() -> void:
+	var is_sub_ping_phase := true
+	var p := 1
+	while p < fft_resolution:
+		is_sub_ping_phase = _run_fft_pass(p, is_sub_ping_phase, true)
+		p <<= 1
+
+	p = 1
+	while p < fft_resolution:
+		is_sub_ping_phase = _run_fft_pass(p, is_sub_ping_phase, false)
+		p <<= 1
+
+
+func _run_fft_pass(p: int, is_sub_ping_phase: bool, is_horizontal: bool) -> bool:
+	var shader
+	var pipeline
+	var label
+
+	if is_horizontal:
+		shader = _fft_horizontal_shader
+		pipeline = _fft_horizontal_pipeline
+		label = "horizontal FFT"
+	else:
+		shader = _fft_vertical_shader
+		pipeline = _fft_vertical_pipeline
+		label = "vertical FFT"
+
+	if is_sub_ping_phase:
+		_spectrum_uniform.binding = Binding.INPUT
+		_sub_pong_uniform.binding = Binding.OUTPUT
+	else:
+		_spectrum_uniform.binding = Binding.OUTPUT
+		_sub_pong_uniform.binding = Binding.INPUT
+
+	_update_buffer(_fft_settings_buffer, _pack_fft_settings(p), label)
+
+	var uniform_set := _create_uniform_set([
+		_fft_settings_uniform,
+		_sub_pong_uniform,
+		_spectrum_uniform
+	], shader)
+
+	_dispatch_compute(pipeline, uniform_set, fft_resolution, 1)
+
+	_rd.free_rid(uniform_set)
+
+	return not is_sub_ping_phase
+
+
+func _update_buffer(buffer: RID, data: PackedByteArray, label: String) -> void:
+	if _rd.buffer_update(buffer, 0, data.size(), data) != OK:
+		print("error updating %s buffer" % label)
+
+
+func _create_uniform_set(uniforms: Array, shader: RID) -> RID:
+	return _rd.uniform_set_create(uniforms, shader, UNIFORM_SET)
+
+
+#Lance le compute Shader
+func _dispatch_compute(pipeline: RID, uniform_set: RID, x: int, y: int, z: int = 1) -> void:
+	var compute_list := _rd.compute_list_begin()
+	_rd.compute_list_bind_compute_pipeline(compute_list, pipeline)
+	_rd.compute_list_bind_uniform_set(compute_list, uniform_set, UNIFORM_SET)
+	_rd.compute_list_dispatch(compute_list, x, y, z)
+	_rd.compute_list_end()
+
+
+func _swap_ping_pong_bindings() -> void:
+	if _is_ping_phase:
+		_ping_uniform.binding = Binding.PING
+		_pong_uniform.binding = Binding.PONG
+	else:
+		_ping_uniform.binding = Binding.PONG
+		_pong_uniform.binding = Binding.PING

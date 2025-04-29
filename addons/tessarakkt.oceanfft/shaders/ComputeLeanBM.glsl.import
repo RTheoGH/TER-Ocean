@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://dnvbvtn13fuhi"
+path="res://.godot/imported/ComputeLeanBM.glsl-6f7db394da185b5a5f79361e671f04a2.res"
+
+[deps]
+
+source_file="res://addons/tessarakkt.oceanfft/shaders/ComputeLeanBM.glsl"
+dest_files=["res://.godot/imported/ComputeLeanBM.glsl-6f7db394da185b5a5f79361e671f04a2.res"]
+
+[params]
+

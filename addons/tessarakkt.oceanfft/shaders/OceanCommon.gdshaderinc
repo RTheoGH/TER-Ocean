@@ -64,6 +64,11 @@ uniform float lod_fake_distance = 0.0;
 uniform bool debug_normal = false;
 uniform bool debug_displacement = true;
 
+uniform sampler2D lean_normal_texture : filter_linear_mipmap;
+uniform sampler2D lean_B_texture;
+uniform sampler2D lean_M_texture;
+
+
 
 void TriangleGrid(vec2 uv,
  out float w1,out float w2, out float w3,
@@ -126,7 +131,7 @@ vec3 get_displacement_tiling(vec2 uv)
 	return color;
 }
 
-vec3 get_displacement_tiling_gaussian(vec2 uv)
+vec3 get_displacement_tiling_gaussian(sampler2D tex, vec2 uv)
 {
 	vec2 grid_uv = uv * grid_scale * 0.0000625;
 	uv *=  tb_scale * 0.0000625;
@@ -141,11 +146,11 @@ vec3 get_displacement_tiling_gaussian(vec2 uv)
 	vec2 uv2 = uv + hash2(vec2(vertex2));
 	vec2 uv3 = uv + hash2(vec2(vertex3));
 
-	vec3 G1 = texture(cascade_displacements, uv1 + wind_uv_offset).rgb;
-	vec3 G2 = texture(cascade_displacements, uv2 + wind_uv_offset).rgb;
-	vec3 G3 = texture(cascade_displacements, uv3 + wind_uv_offset).rgb;
+	vec3 G1 = texture(tex, uv1 + wind_uv_offset).rgb;
+	vec3 G2 = texture(tex, uv2 + wind_uv_offset).rgb;
+	vec3 G3 = texture(tex, uv3 + wind_uv_offset).rgb;
 
-	vec3 average = textureLod(cascade_displacements, uv, lod_fake_distance).rgb;
+	vec3 average = textureLod(tex, uv, lod_fake_distance).rgb;
 
 	//Linear blending a changer
 	vec3 color = w1 * G1 + w2 * G2 + w3 * G3;
@@ -154,6 +159,57 @@ vec3 get_displacement_tiling_gaussian(vec2 uv)
 	color += vec3(average);
 
 	return color;
+}
+
+vec3 lean_mapping_tiled_normal(vec2 uv){
+	vec2 grid_uv = uv * grid_scale * 0.0000625;
+	uv *=  tb_scale * 0.0000625;
+
+    float w1, w2, w3;
+    ivec2 vertex1, vertex2, vertex3;
+    TriangleGrid(grid_uv, w1, w2, w3, vertex1, vertex2, vertex3);
+
+    vec2 uv1 =  uv + hash2(vec2(vertex1));
+    vec2 uv2 =  uv + hash2(vec2(vertex2));
+    vec2 uv3 =  uv + hash2(vec2(vertex3));
+	
+    vec2 B1 = texture(lean_B_texture, uv1 + wind_uv_offset).xy;
+    vec2 B2 = texture(lean_B_texture, uv2 + wind_uv_offset).xy;
+    vec2 B3 = texture(lean_B_texture, uv3 + wind_uv_offset).xy;
+
+    vec3 M1 = texture(lean_M_texture, uv1 + wind_uv_offset).xyz;
+    vec3 M2 = texture(lean_M_texture, uv2 + wind_uv_offset).xyz;
+    vec3 M3 = texture(lean_M_texture, uv3 + wind_uv_offset).xyz;
+
+    vec2 mu_B = w1 * B1 + w2 * B2 + w3 * B3;
+    vec3 mu_M = w1 * M1 + w2 * M2 + w3 * M3;
+
+    mat2 sigma1 = mat2(
+	    vec2(M1.x - B1.x * B1.x, M1.z - B1.x * B1.y),
+	    vec2(M1.z - B1.x * B1.y, M1.y - B1.y * B1.y)
+	);
+
+	mat2 sigma2 = mat2(
+	    vec2(M2.x - B2.x * B2.x, M2.z - B2.x * B2.y),
+	    vec2(M2.z - B2.x * B2.y, M2.y - B2.y * B2.y)
+	);
+
+	mat2 sigma3 = mat2(
+	    vec2(M3.x - B3.x * B3.x, M3.z - B3.x * B3.y),
+	    vec2(M3.z - B3.x * B3.y, M3.y - B3.y * B3.y)
+	);
+	
+	mat2 sigmaMean = mat2(
+        vec2(mu_M.x - mu_B.x * mu_B.x, mu_M.z - mu_B.x * mu_B.y),
+        vec2(mu_M.z - mu_B.x * mu_B.y, mu_M.y - mu_B.y * mu_B.y)
+    );
+
+    mat2 Sigma = w1*w1 * (sigma1 - sigmaMean) + w2*w2 * (sigma2 - sigmaMean) + w3*w3 * (sigma3 - sigmaMean);
+
+
+
+    vec3 n = vec3(-Sigma[0][0], -Sigma[1][1], 1.0);
+    return normalize(n);
 }
 
 //ne pas utiliser
@@ -193,6 +249,7 @@ vec3 get_displacement(vec2 uv) {
 // will be packed in the W channel.
 vec4 get_normals_jacobian(vec2 uv, vec3 displacement) {
 	// Surface Normals
+	/*
 	float offset = 1.0;
 
 	vec3 right = (vec3(offset, get_displacement_tiling_gaussian(uv + vec2(offset, 0.0)).y, 0.0)) - displacement;
@@ -214,8 +271,10 @@ vec4 get_normals_jacobian(vec2 uv, vec3 displacement) {
 	float jyx = bottom.x / offset;
 	float jyy = bottom.y / offset;
 	float jacobian_determinant = (jxx * jyy) - (jxy * jyx);
-
+	
 	return vec4(normal, jacobian_determinant);
+	*/
+	return vec4(0.0);
 }
 
 // Apply domain warp to the given coordinate. This has no effect at 0 distance,

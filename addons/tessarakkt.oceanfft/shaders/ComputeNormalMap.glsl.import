@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://duhqpn2uoym5h"
+path="res://.godot/imported/ComputeNormalMap.glsl-06760db84250fa7c6469815d219d0f31.res"
+
+[deps]
+
+source_file="res://addons/tessarakkt.oceanfft/shaders/ComputeNormalMap.glsl"
+dest_files=["res://.godot/imported/ComputeNormalMap.glsl-06760db84250fa7c6469815d219d0f31.res"]
+
+[params]
+

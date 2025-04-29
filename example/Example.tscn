@@ -25,23 +25,24 @@ noise = SubResource("FastNoiseLite_18r8k")
 
 [sub_resource type="Resource" id="Resource_opkt2"]
 script = ExtResource("7_xa10r")
-simulation_enabled = null
-simulation_frameskip = null
-heightmap_sync_frameskip = null
-fft_resolution = 64
-horizontal_dimension = 256
+simulation_enabled = true
+material = ExtResource("5_0jjw4")
+simulation_frameskip = 0
+heightmap_sync_frameskip = 0
+fft_resolution = 128
+horizontal_dimension = 1024
 time_scale = 1.1
-cascade_range = null
-cascade_scale = null
-planetary_curve_strength = null
-amplitude_scale_min = null
-amplitude_scale_max = null
-amplitude_scale_fade_distance = null
+cascade_range = Vector2(0, 1)
+cascade_scale = 1.0
+planetary_curve_strength = 1e-06
+amplitude_scale_min = 0.25
+amplitude_scale_max = 1.0
+amplitude_scale_fade_distance = 12000.0
 domain_warp_texture = SubResource("NoiseTexture2D_a82po")
-domain_warp_strength = null
-domain_warp_uv_scale = null
+domain_warp_strength = 1500.0
+domain_warp_uv_scale = 6.25e-05
 choppiness = 0.5
-wind_direction_degrees = null
+wind_direction_degrees = 0.0
 wave_scroll_speed = -0.003
 wind_speed = 15.0
 
@@ -171,7 +172,7 @@ shader_parameter/distortion_speed = 5.0
 shader_parameter/distortion_amount = 1.0
 shader_parameter/noise_texture = SubResource("NoiseTexture2D_xvh5c")
 
-[node name="OceanEnvironment" type="WorldEnvironment" node_paths=PackedStringArray("sun_light", "sky_light", "splash_particles", "splash_sub_particles", "underwater_particles", "dive_particles", "underwater_post_proc")]
+[node name="OceanEnvironment" type="WorldEnvironment" node_paths=PackedStringArray("sun_light", "sky_light", "splash_particles", "splash_sub_particles", "dive_particles", "underwater_post_proc")]
 environment = ExtResource("1_o40li")
 script = ExtResource("2_jhrdm")
 ocean = SubResource("Resource_opkt2")
@@ -179,7 +180,6 @@ sun_light = NodePath("DirectionalLight3D_Sun")
 sky_light = NodePath("DirectionalLight3D_Sky")
 splash_particles = NodePath("SplashParticles")
 splash_sub_particles = NodePath("SplashParticles/SplashSubParticles")
-underwater_particles = NodePath("")
 dive_particles = NodePath("Camera3D/DiveParticles")
 underwater_post_proc = NodePath("PostProcessingLayer/UnderwaterPostProc")
 
@@ -249,11 +249,10 @@ transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 2.5
 visible = false
 light_energy = 2.5
 
-[node name="CanvasLayer" type="CanvasLayer" parent="." node_paths=PackedStringArray("ocean", "free_camera", "player_camera")]
+[node name="CanvasLayer" type="CanvasLayer" parent="." node_paths=PackedStringArray("ocean", "free_camera")]
 script = ExtResource("8_h37lk")
 ocean = NodePath("..")
 free_camera = NodePath("../Camera3D")
-player_camera = NodePath("")
 
 [node name="DebugTextureRect0" type="TextureRect" parent="CanvasLayer"]
 custom_minimum_size = Vector2(256, 256)
@@ -263,8 +262,24 @@ expand_mode = 1
 
 [node name="DebugTextureRect1" type="TextureRect" parent="CanvasLayer"]
 custom_minimum_size = Vector2(256, 256)
-offset_right = 256.0
+offset_left = 256.0
+offset_right = 512.0
 offset_bottom = 256.0
+expand_mode = 1
+
+[node name="DebugTextureRect2" type="TextureRect" parent="CanvasLayer"]
+custom_minimum_size = Vector2(256, 256)
+offset_top = 256.0
+offset_right = 256.0
+offset_bottom = 512.0
+expand_mode = 1
+
+[node name="DebugTextureRect3" type="TextureRect" parent="CanvasLayer"]
+custom_minimum_size = Vector2(256, 256)
+offset_left = 256.0
+offset_top = 256.0
+offset_right = 512.0
+offset_bottom = 512.0
 expand_mode = 1
 
 [node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer"]
