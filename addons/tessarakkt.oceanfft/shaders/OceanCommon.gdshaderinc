@@ -64,9 +64,11 @@ uniform float lod_fake_distance = 0.0;
 uniform bool debug_normal = false;
 uniform bool debug_displacement = true;
 
+uniform bool lean_mapping = false;
+
 uniform sampler2D lean_normal_texture : filter_linear_mipmap;
-uniform sampler2D lean_B_texture;
-uniform sampler2D lean_M_texture;
+uniform sampler2D lean_B_texture : filter_linear_mipmap;
+uniform sampler2D lean_M_texture : filter_linear_mipmap;
 
 
 
@@ -183,30 +185,30 @@ vec3 lean_mapping_tiled_normal(vec2 uv){
 
     vec2 mu_B = w1 * B1 + w2 * B2 + w3 * B3;
     vec3 mu_M = w1 * M1 + w2 * M2 + w3 * M3;
+	
+	float s = 1.0/8.0;
 
     mat2 sigma1 = mat2(
-	    vec2(M1.x - B1.x * B1.x, M1.z - B1.x * B1.y),
-	    vec2(M1.z - B1.x * B1.y, M1.y - B1.y * B1.y)
+	    vec2(M1.x - B1.x * B1.x + s, M1.z - B1.x * B1.y),
+	    vec2(M1.z - B1.x * B1.y, M1.y - B1.y * B1.y + s)
 	);
 
 	mat2 sigma2 = mat2(
-	    vec2(M2.x - B2.x * B2.x, M2.z - B2.x * B2.y),
-	    vec2(M2.z - B2.x * B2.y, M2.y - B2.y * B2.y)
+	    vec2(M2.x - B2.x * B2.x + s, M2.z - B2.x * B2.y),
+	    vec2(M2.z - B2.x * B2.y, M2.y - B2.y * B2.y + s)
 	);
 
 	mat2 sigma3 = mat2(
-	    vec2(M3.x - B3.x * B3.x, M3.z - B3.x * B3.y),
-	    vec2(M3.z - B3.x * B3.y, M3.y - B3.y * B3.y)
+	    vec2(M3.x - B3.x * B3.x + s, M3.z - B3.x * B3.y),
+	    vec2(M3.z - B3.x * B3.y, M3.y - B3.y * B3.y + s)
 	);
 	
 	mat2 sigmaMean = mat2(
-        vec2(mu_M.x - mu_B.x * mu_B.x, mu_M.z - mu_B.x * mu_B.y),
-        vec2(mu_M.z - mu_B.x * mu_B.y, mu_M.y - mu_B.y * mu_B.y)
+        vec2(mu_M.x - mu_B.x * mu_B.x + s, mu_M.z - mu_B.x * mu_B.y),
+        vec2(mu_M.z - mu_B.x * mu_B.y, mu_M.y - mu_B.y * mu_B.y + s)
     );
 
     mat2 Sigma = w1*w1 * (sigma1 - sigmaMean) + w2*w2 * (sigma2 - sigmaMean) + w3*w3 * (sigma3 - sigmaMean);
-
-
 
     vec3 n = vec3(-Sigma[0][0], -Sigma[1][1], 1.0);
     return normalize(n);
@@ -249,13 +251,13 @@ vec3 get_displacement(vec2 uv) {
 // will be packed in the W channel.
 vec4 get_normals_jacobian(vec2 uv, vec3 displacement) {
 	// Surface Normals
-	/*
+
 	float offset = 1.0;
 
-	vec3 right = (vec3(offset, get_displacement_tiling_gaussian(uv + vec2(offset, 0.0)).y, 0.0)) - displacement;
-	vec3 left = (vec3(-offset, get_displacement_tiling_gaussian(uv + vec2(-offset, 0.0)).y, 0.0)) - displacement;
-	vec3 bottom = (vec3(0.0, get_displacement_tiling_gaussian(uv + vec2(0.0, offset)).y, offset)) - displacement;
-	vec3 top = (vec3(0.0, get_displacement_tiling_gaussian(uv + vec2(0.0, -offset)).y, -offset)) - displacement;
+	vec3 right = (vec3(offset, get_displacement_tiling_gaussian(cascade_displacements,uv + vec2(offset, 0.0)).y, 0.0)) - displacement;
+	vec3 left = (vec3(-offset, get_displacement_tiling_gaussian(cascade_displacements, uv + vec2(-offset, 0.0)).y, 0.0)) - displacement;
+	vec3 bottom = (vec3(0.0, get_displacement_tiling_gaussian( cascade_displacements,uv + vec2(0.0, offset)).y, offset)) - displacement;
+	vec3 top = (vec3(0.0, get_displacement_tiling_gaussian( cascade_displacements,uv + vec2(0.0, -offset)).y, -offset)) - displacement;
 
 	vec3 top_right = cross(right, top);
 	vec3 top_left = cross(top, left);
@@ -273,8 +275,6 @@ vec4 get_normals_jacobian(vec2 uv, vec3 displacement) {
 	float jacobian_determinant = (jxx * jyy) - (jxy * jyx);
 	
 	return vec4(normal, jacobian_determinant);
-	*/
-	return vec4(0.0);
 }
 
 // Apply domain warp to the given coordinate. This has no effect at 0 distance,

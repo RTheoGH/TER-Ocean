@@ -226,3 +226,7 @@ func _on_debug_normal_toggled(toggled_on:bool) -> void:
 	ocean.material.set_shader_parameter("debug_normal", toggled_on)
 
 
+
+
+func _on_lean_mapping_toggled(toggled_on:bool) -> void:
+	ocean.material.set_shader_parameter("lean_mapping", toggled_on);

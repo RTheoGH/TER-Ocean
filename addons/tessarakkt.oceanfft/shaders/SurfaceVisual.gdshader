@@ -143,9 +143,9 @@ void vertex() {
 
 	vec3 nj = get_displacement_tiling_gaussian( lean_normal_texture,VERTEX.xz);
 	NORMAL = nj.xyz * normal_factor;
-	jacobian_determinant = 1.0;
+	jacobian_determinant = 0.0;
 
-	VERTEX += displacement;
+	//VERTEX += displacement;
 	world_vertex = VERTEX;
 }
 
@@ -196,8 +196,9 @@ void fragment() {
 	wave_height = world_vertex.y;
 	
 	// lean mapping 
-	
-	//NORMAL = lean_mapping_tiled_normal(world_vertex.xz);
+	if(lean_mapping){
+		NORMAL = lean_mapping_tiled_normal(world_vertex.xz);
+	}
 }
 
 
