@@ -513,9 +513,10 @@ func _initialize_simulation() -> void:
 
 
 	_fmt_rg32f_mm.width = fft_resolution
-	_fmt_rg32f_mm.width = fft_resolution
+	_fmt_rg32f_mm.height = fft_resolution
 	_fmt_rg32f_mm.format = RenderingDevice.DATA_FORMAT_R32G32_SFLOAT
-	_fmt_rg32f_mm.usage_bits =  _fmt_r32f.usage_bits
+	_fmt_rg32f_mm.usage_bits = _fmt_r32f.usage_bits
+	_fmt_rg32f_mm.mipmaps = 8
 	
 	#### Compile & Initialize Initial Spectrum Shader
 	############################################################################
@@ -665,8 +666,10 @@ func _initialize_simulation() -> void:
 	_lean_B_image = Image.create(fft_resolution, fft_resolution, true, Image.FORMAT_RGF)
 
 	print(_lean_B_image.get_mipmap_count())
+	_lean_B_image.generate_mipmaps()
 
-	_lean_B_tex = _rd.texture_create(_fmt_rg32f, RDTextureView.new(), [_lean_B_image.get_data()])
+	_lean_B_tex = _rd.texture_create(_fmt_rg32f_mm, RDTextureView.new(), [_lean_B_image.get_data()])
+	#_lean_B_tex = _rd.texture_create(_fmt_rg32f_mm, RDTextureView.new(), [])
 	_lean_B_uniform = RDUniform.new()
 	_lean_B_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_IMAGE
 	_lean_B_uniform.binding = Binding.LEAN_B

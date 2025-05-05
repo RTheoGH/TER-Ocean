@@ -215,6 +215,8 @@ func _on_grid_scaling_slider_value_changed(value:float) -> void:
 
 func _on_lodslider_value_changed(value:float) -> void:
 	lod_fake_distance = value
+	print("fake distance is")
+	print(lod_fake_distance)
 	ocean.material.set_shader_parameter("lod_fake_distance", lod_fake_distance)
 
 

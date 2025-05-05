@@ -370,7 +370,8 @@ text = "lod fake distance
 
 [node name="lodslider" type="HSlider" parent="CanvasLayer/PanelContainer/VBoxContainer"]
 layout_mode = 2
-max_value = 50000.0
+max_value = 5.0
+step = 0.1
 
 [node name="FrameskipLabel" type="Label" parent="CanvasLayer/PanelContainer/VBoxContainer"]
 layout_mode = 2

@@ -145,7 +145,7 @@ void vertex() {
 	NORMAL = nj.xyz * normal_factor;
 	jacobian_determinant = 0.0;
 
-	//VERTEX += displacement;
+	VERTEX += displacement;
 	world_vertex = VERTEX;
 }
 

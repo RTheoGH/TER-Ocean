@@ -16,26 +16,41 @@ layout(set = 0 , binding = 31 , rgba32f) uniform image2D u_normals_output;
 void main(){
     ivec2 coord = ivec2(gl_GlobalInvocationID.xy);
     ivec2 size = imageSize(u_spectrum_input);
+    if (coord.x >= size.x || coord.y >= size.y) return;
 
-    ivec2 left   = max(coord - ivec2(1, 0), ivec2(0));
-    ivec2 right  = min(coord + ivec2(1, 0), size - ivec2(1));
-    ivec2 up     = max(coord - ivec2(0, 1), ivec2(0));
-    ivec2 down   = min(coord + ivec2(0, 1), size - ivec2(1));
+    vec2 uv = vec2(coord) / vec2(size);
 
-    float heightL = imageLoad(u_spectrum_input, left).r;
-    float heightR = imageLoad(u_spectrum_input, right).r;
-    float heightU = imageLoad(u_spectrum_input, up).r;
-    float heightD = imageLoad(u_spectrum_input, down).r;
+    float offset = 1.0;
 
-    float dx = heightR - heightL;
-    float dy = heightD - heightU;
+    float hC = imageLoad(u_spectrum_input, coord).r;
+    vec3 center = vec3(0.0, hC, 0.0);
 
-    vec3 normal = normalize(vec3(-dx, -dy, 1.0));
+    float hR = imageLoad(u_spectrum_input, clamp(coord + ivec2(1, 0), ivec2(0), size - 1)).r;
+    float hL = imageLoad(u_spectrum_input, clamp(coord - ivec2(1, 0), ivec2(0), size - 1)).r;
+    float hU = imageLoad(u_spectrum_input, clamp(coord - ivec2(0, 1), ivec2(0), size - 1)).r;
+    float hD = imageLoad(u_spectrum_input, clamp(coord + ivec2(0, 1), ivec2(0), size - 1)).r;
 
-    float jacobian = 1.0 - dx * dx - dy * dy; //pas utilise pour l'instant
+    vec3 right  = vec3( offset, hR, 0.0) - center;
+    vec3 left   = vec3(-offset, hL, 0.0) - center;
+    vec3 top    = vec3(0.0, hU, -offset) - center;
+    vec3 bottom = vec3(0.0, hD,  offset) - center;
+
+    vec3 n0 = cross(right, top);
+    vec3 n1 = cross(top, left);
+    vec3 n2 = cross(left, bottom);
+    vec3 n3 = cross(bottom, right);
+
+    vec3 normal = normalize((n0 + n1 + n2 + n3) );
+
+    float jxx = right.x / offset;
+    float jxy = right.y / offset;
+    float jyx = bottom.x / offset;
+    float jyy = bottom.y / offset;
+    float jacobian = (jxx * jyy) - (jxy * jyx);
     jacobian = 1.0;
 
-    imageStore(u_normals_output, coord, vec4(normal * 0.5 + 0.5, jacobian)); 
+    // Output normal in [0,1] range
+    imageStore(u_normals_output, coord, vec4(normal * 0.5 + 0.5, jacobian));
 
 }
 
