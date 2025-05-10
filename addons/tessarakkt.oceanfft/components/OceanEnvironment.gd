@@ -67,6 +67,8 @@ class_name OceanEnvironment
 ## transitioned to below water.
 var player_is_surfaced := false
 
+var lean_mapping_enabled := false
+
 
 func _ready() -> void:
 	var camera := get_viewport().get_camera_3d()
@@ -185,3 +187,7 @@ func _get_configuration_warnings() -> PackedStringArray:
 		result.push_back("OceanEnvironment requires an Ocean3D to be assigned")
 	
 	return result
+
+
+func _on_lean_enabled_toggled(toggled_on: bool) -> void:
+	lean_mapping_enabled = not lean_mapping_enabled

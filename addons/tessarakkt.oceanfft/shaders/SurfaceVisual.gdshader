@@ -125,6 +125,7 @@ varying float foam_specular_factor;
 //Get the LEAN Mapping values from the compute shader
 uniform sampler2D lean_B_texture;
 uniform sampler2D lean_M_texture;
+uniform sampler2D normal_texture;
 
 
 vec2 lod_morph(float morph_factor, vec2 grid_pos) {
@@ -221,9 +222,10 @@ void fragment() {
 	vec2 lean_uv = world_vertex.xz * uv_scale;
 	vec2 B = texture(lean_B_texture, lean_uv).xy;
 	vec3 M = texture(lean_M_texture, lean_uv).xyz;
+	vec3 N = texture(normal_texture, lean_uv).xyz;
 
 	//cov + det
-	vec3 cov_matrix = M - vec3(B.x*B.x, B.y*B.y, B.x*B.y);
+	vec3 cov_matrix = M - vec3(B.x*B.x - 1.0/2.0, B.y*B.y, B.x*B.y / 1.0/2.0);
 	float det = cov_matrix.x * cov_matrix.y - cov_matrix.z * cov_matrix.z;
 
 	//specular term
@@ -250,8 +252,9 @@ void fragment() {
 	METALLIC = 0.0;
 	SPECULAR = 0.0;
 
-	//ALBEDO = vec3(B/2.0, 0.); //display b map
-	ALBEDO = NORMAL; // Display the normal map as colors
+	//ALBEDO = vec3(B, 0.); //display b map
+	//ALBEDO = NORMAL; // Display the normal map as colors
+	//ALBEDO = N; //Display our compute shader normal
 }
 
 

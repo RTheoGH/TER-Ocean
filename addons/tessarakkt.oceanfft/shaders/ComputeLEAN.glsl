@@ -1,10 +1,10 @@
 #[compute]
 #version 460 core
 
-#define WORK_GROUP_DIM 256
+#define WORK_GROUP_DIM 32
 #define PI 3.14159265358979323846
 
-layout(local_size_x = WORK_GROUP_DIM) in;
+layout(local_size_x = WORK_GROUP_DIM , local_size_y = WORK_GROUP_DIM) in;
 
 
 //input/output

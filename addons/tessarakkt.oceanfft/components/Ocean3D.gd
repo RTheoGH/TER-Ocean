@@ -257,7 +257,6 @@ var _normal_shader: RID #Access to the shader itself
 var _normal_pipeline: RID #To eventually create a pipeline for it, i guess for optimisation?
 var _normal_tex : RID #not sure why i made this tbh
 var _normal_texture : Texture2DRD #Texture
-var _normal_image : Image #Image, again not sure why this is here, but so far every texture had an image??
 var _normal_uniform = RDUniform.new() #uniform for our output 
 var _displacement_uniform = RDUniform.new() #uniform for our input (will be waves_texture)
 
@@ -265,9 +264,6 @@ var _displacement_uniform = RDUniform.new() #uniform for our input (will be wave
 
 var _lean_shader: RID #Access to the shader itself
 var _lean_pipeline: RID #create a pipeline for it
-var _lean_normal_image: Image #image 
-var _lean_normal_texture: Texture2DRD #texture
-var _lean_normal_uniform : RDUniform #input uniform
 #output
 #again idk what tex does
 var _lean_b_tex: RID
@@ -281,9 +277,6 @@ var _lean_m_texture: Texture2DRD
 #output uniforms
 var _lean_b_uniform: RDUniform 
 var _lean_m_uniform: RDUniform
-
-var _lean_settings_buffer: RID
-var _lean_settings_uniform := RDUniform.new() #uniform for our settings buffer
 
 
 #for now does nothing, eventually to enable and disable lean mapping in real time
@@ -444,12 +437,15 @@ func get_lean_b_texture() -> Texture2DRD:
 	assert(initialized, "Ocean3D not initialized")
 	print(_lean_b_texture)
 
+	#Prints to help debug
 	var texture_data = _rd.texture_get_data(_lean_b_tex, 0)
 	var image = Image.create_from_data(fft_resolution, fft_resolution, false, Image.FORMAT_RGF, texture_data)
-	for y in range(image.get_height()):
+	for y in range(image.get_height()):	
 		for x in range(image.get_width()):
 			var pixel = image.get_pixel(x, y)
-			print("Pixel at (", x, ",", y, "): ", pixel)
+			if(pixel.r != 0.0 or pixel.g != 0.0 or pixel.b != 0.0):
+				print("Pixel at (", x, ",", y, "): ", pixel)
+			#print("Pixel at (", x, ",", y, "): ", pixel)
 	
 	return _lean_b_texture
 
@@ -548,8 +544,9 @@ func _initialize_simulation() -> void:
 	_normal_shader = _rd.shader_create_from_spirv(load("res://addons/tessarakkt.oceanfft/shaders/ComputeNormals.glsl").get_spirv())
 	#Create the pipeline from that shader
 	_normal_pipeline = _rd.compute_pipeline_create(_normal_shader)
-	#create an empty teture idk
+	#initialize the textures
 	_normal_texture = Texture2DRD.new()
+	
 	_normal_tex = _rd.texture_create(_fmt_rg32f, RDTextureView.new(), [initial_image_rgf.get_data()])
 	#assign the texture its id 
 	_normal_texture.texture_rd_rid = _normal_tex
@@ -558,7 +555,7 @@ func _initialize_simulation() -> void:
 	_normal_uniform.binding = Binding.NORMAL_MAP
 	_normal_uniform.add_id(_normal_tex)
 	_displacement_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_IMAGE
-	_displacement_uniform.binding = Binding.SETTINGS
+	_displacement_uniform.binding = Binding.DISPLACEMENT
 
 	##ANDREW : initialize the lean map shader and texture i guess
 	## lowkey i think this is actually correct
@@ -592,12 +589,6 @@ func _initialize_simulation() -> void:
 	_lean_m_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_IMAGE
 	_lean_m_uniform.binding = Binding.LEAN_M
 	_lean_m_uniform.add_id(_lean_m_tex)
-
-	#bind lean uniform
-	_lean_normal_uniform = RDUniform.new()
-	_lean_normal_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_IMAGE
-	_lean_normal_uniform.binding = Binding.NORMAL_MAP
-	_lean_normal_uniform.add_id(_normal_tex)
 
 	#I think this is in the .tres file
 	#not 100% sure how to make these work, and why they're necessary
@@ -924,7 +915,7 @@ func _simulate(delta:float, sync_heightmap:bool) -> void:
 	## Bind the displacement map as input
 	_displacement_uniform.binding = Binding.DISPLACEMENT #bind it properly
 	_displacement_uniform.clear_ids() #i guess clear it to be sure
-	_displacement_uniform.add_id(_waves_texture.texture_rd_rid) #set its id to the displacement map (wave texture) id
+	_displacement_uniform.add_id(_spectrum_tex) #set its id to the displacement map (wave texture) id
 
 	## Bind normal texture as output
 	_normal_uniform.binding = Binding.NORMAL_MAP
@@ -950,10 +941,6 @@ func _simulate(delta:float, sync_heightmap:bool) -> void:
 	#### Execute lea, map shader
 	########################################################################
 	##Bind the normal,b and m maps to the shader
-	_lean_b_uniform.binding = Binding.LEAN_B
-	_lean_m_uniform.binding = Binding.LEAN_M
-
-	#Bind B and M maps as output
 	_lean_b_uniform.binding = Binding.LEAN_B
 	_lean_m_uniform.binding = Binding.LEAN_M
 
