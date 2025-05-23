@@ -1,7 +1,7 @@
 #[compute]
 #version 460 core
 
-#define WORK_GROUP_DIM 256
+#define WORK_GROUP_DIM 32
 #define PI 3.14159265358979323846
 
 layout(local_size_x = 32, local_size_y = 32) in;

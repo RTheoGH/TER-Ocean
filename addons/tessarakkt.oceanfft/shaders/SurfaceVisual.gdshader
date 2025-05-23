@@ -142,7 +142,7 @@ void vertex() {
 	displacement = get_displacement_tiling_gaussian( cascade_displacements,VERTEX.xz);
 
 	vec3 nj = get_displacement_tiling_gaussian( lean_normal_texture,VERTEX.xz);
-	NORMAL = nj.xyz * normal_factor;
+	NORMAL = nj.xyz;
 	jacobian_determinant = 0.0;
 
 	VERTEX += displacement;
@@ -197,7 +197,7 @@ void fragment() {
 	
 	// lean mapping 
 	if(lean_mapping){
-		NORMAL = lean_mapping_tiled_normal(world_vertex.xz);
+		NORMAL += lean_mapping_tiled_normal(world_vertex.xz);
 	}
 }
 

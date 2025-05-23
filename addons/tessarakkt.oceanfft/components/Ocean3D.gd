@@ -668,8 +668,8 @@ func _initialize_simulation() -> void:
 	print(_lean_B_image.get_mipmap_count())
 	_lean_B_image.generate_mipmaps()
 
-	_lean_B_tex = _rd.texture_create(_fmt_rg32f_mm, RDTextureView.new(), [_lean_B_image.get_data()])
-	#_lean_B_tex = _rd.texture_create(_fmt_rg32f_mm, RDTextureView.new(), [])
+	#_lean_B_tex = _rd.texture_create(_fmt_rg32f_mm, RDTextureView.new(), [_lean_B_image.get_data()])
+	_lean_B_tex = _rd.texture_create(_fmt_rg32f_mm, RDTextureView.new(), [])
 	_lean_B_uniform = RDUniform.new()
 	_lean_B_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_IMAGE
 	_lean_B_uniform.binding = Binding.LEAN_B

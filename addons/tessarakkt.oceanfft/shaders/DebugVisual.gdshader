@@ -143,7 +143,7 @@ void fragment() {
 	}
 
 	vec2 uv = world_vertex.xz * tb_scale * 0.0000625;
-	ALBEDO = textureLod(lean_B_texture, uv, lod_fake_distance).rgb;
+	//ALBEDO = textureLod(lean_B_texture, uv, lod_fake_distance).rgb;
 	//vec2 uv = world_vertex.xz * tb_scale * 0.0000625;
 	//ALBEDO = texture(lean_normal_texture, uv).rgb;
 
