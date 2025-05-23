@@ -61,8 +61,15 @@ group_uniforms;
 vec2 get_flow_direction(vec2 uv) {
     // vec2 flow = texture(flow_map, uv).rg;
 	
-    vec2 flow = uv - vec2(0.5, 0.5);
-	return normalize(flow);
+    //vec2 flow = uv - vec2(0.5, 0.5);
+	//if(uv.x < 0.5){
+		//uv.x = -uv.x;
+	//}
+	//if(uv.y < 0.5){
+		//uv.y = -uv.y;
+	//}
+	if(uv == vec2(0, 0)) return normalize(vec2(0.001, 0));
+	return normalize(uv);
 }
 
 uniform float tb_scale = 1.0;
@@ -86,7 +93,7 @@ void TriangleGrid(vec2 uv,
 		w2 = temp.y;
 		w3 = temp.x;
 		vertex1 = baseId;
-		vertex2 = baseId + ivec2(0, 1);
+		vertex2 = baseId + ivec2(0, 1); 
 		vertex3 = baseId + ivec2(1, 0);
 	}
 	else
@@ -100,6 +107,12 @@ void TriangleGrid(vec2 uv,
 	}
 }
 
+vec2 TriangleGridToUV(ivec2 vertex) {
+    const mat2 skewedToGrid = inverse(mat2(vec2(1.0, 0.0), vec2(-0.57735027, 1.15470054)));
+    return skewedToGrid * vec2(vertex) / 3.464;
+}
+
+
 vec2 hash2(vec2 p)
 {
 	return fract(sin((p) * mat2(vec2(127.1, 311.7), vec2(269.5, 183.3)) )*43758.5453);
@@ -108,7 +121,7 @@ vec2 hash2(vec2 p)
 vec3 get_displacement_tiling(vec2 uv)
 {
 	uv *=  tb_scale * 0.0000625;
-
+	
 	// Get triangle info
 	float w1, w2, w3;
 	ivec2 vertex1, vertex2, vertex3;
@@ -118,22 +131,35 @@ vec3 get_displacement_tiling(vec2 uv)
 	vec2 uv1 = uv + hash2(vec2(vertex1));
 	vec2 uv2 = uv + hash2(vec2(vertex2));
 	vec2 uv3 = uv + hash2(vec2(vertex3));
+	
+	vec2 hexaCenter1 = TriangleGridToUV(vertex1);
+	vec2 hexaCenter2 = TriangleGridToUV(vertex2);
+	vec2 hexaCenter3 = TriangleGridToUV(vertex3);
 
-	vec2 flow_direction = get_flow_direction(uv);
-	float theta = atan(flow_direction.y, flow_direction.x) - atan(wind_uv_offset.y, wind_uv_offset.x);
-	//à faire : faire un theta par sommet vertex1, 2, 3 (quand y aura une flow map)
-	mat2 rotation2 = mat2(vec2(cos(theta), -sin(theta)), vec2(sin(theta), cos(theta)));
+	vec2 flow_direction1 = get_flow_direction(hexaCenter1);
+	vec2 flow_direction2 = get_flow_direction(hexaCenter2);
+	vec2 flow_direction3 = get_flow_direction(hexaCenter3);
+	
+	float theta1 = atan(flow_direction1.y, flow_direction1.x) - atan(wind_uv_offset.y, wind_uv_offset.x);
+	float theta2 = atan(flow_direction2.y, flow_direction2.x) - atan(wind_uv_offset.y, wind_uv_offset.x);
+	float theta3 = atan(flow_direction3.y, flow_direction3.x) - atan(wind_uv_offset.y, wind_uv_offset.x);
+	
+	mat2 rotation2_1 = mat2(vec2(cos(theta1), -sin(theta1)), vec2(sin(theta1), cos(theta1)));
+	mat2 rotation2_2 = mat2(vec2(cos(theta2), -sin(theta2)), vec2(sin(theta2), cos(theta2)));
+	mat2 rotation2_3 = mat2(vec2(cos(theta3), -sin(theta3)), vec2(sin(theta3), cos(theta3)));
 
-	vec3 I1 = texture(cascade_displacements, rotation2 * (uv1 + wind_uv_offset)).rgb;
-	vec3 I2 = texture(cascade_displacements, rotation2 * (uv2 + wind_uv_offset)).rgb;
-	vec3 I3 = texture(cascade_displacements, rotation2 * (uv3 + wind_uv_offset)).rgb;
+	vec3 I1 = texture(cascade_displacements, rotation2_1 * uv1 + wind_uv_offset).rgb;
+	vec3 I2 = texture(cascade_displacements, rotation2_2 * uv2 + wind_uv_offset).rgb;
+	vec3 I3 = texture(cascade_displacements, rotation2_3 * uv3 + wind_uv_offset).rgb;
 
-	mat3 rotation3 = mat3(vec3(cos(theta), 0, -sin(theta)), vec3(0, 1, 0), vec3(sin(theta), 0, cos(theta)));
+	mat3 rotation3_1 = mat3(vec3(cos(theta1), 0, -sin(theta1)), vec3(0, 1, 0), vec3(sin(theta1), 0, cos(theta1)));
+	mat3 rotation3_2 = mat3(vec3(cos(theta2), 0, -sin(theta2)), vec3(0, 1, 0), vec3(sin(theta2), 0, cos(theta2)));
+	mat3 rotation3_3 = mat3(vec3(cos(theta3), 0, -sin(theta3)), vec3(0, 1, 0), vec3(sin(theta3), 0, cos(theta3)));
 
 	//Linear blending a changer
-	vec3 color = w1 * rotation3 * I1 + w2 * rotation3 * I2 + w3 * rotation3 * I3;
+	vec3 displacement = w1 * rotation3_1 * I1 + w2 * rotation3_2 * I2 + w3 * rotation3_3 * I3;
 
-	return color;
+	return displacement;
 }
 
 //ne pas utiliser
@@ -167,7 +193,10 @@ vec3 get_displacement(vec2 uv) {
 	return displacement;
 }
 
-
+// rotation2 est censé se faire une fois pour chaque hexagone
+// trouver coord uv correspondant aux centres des héxagones
+// -> inverser la matrice pour ça 
+// réseau de neurones approxime on a pas besoin on a déjà des maths bien 
 
 
 // Calculate surface normals and Jacobian determinant for a given coordinate.
