@@ -155,7 +155,7 @@ void process() {
 
 	// If current life time exceeds this particles max age, set it inactive
 	CUSTOM.y += DELTA / LIFETIME;
-	if (CUSTOM.y > CUSTOM.w) {
+	if (CUSTOM.y > CUSTOM.w){
 		ACTIVE = false;
 	}
 

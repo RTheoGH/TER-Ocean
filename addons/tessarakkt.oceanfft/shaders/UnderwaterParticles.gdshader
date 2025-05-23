@@ -108,24 +108,24 @@ uint hash(uint x) {
 void start() {
 	uint alt_seed = hash(NUMBER + uint(1) + RANDOM_SEED);
 	float linear_dist = length(TRANSFORM[3].xyz - EMISSION_TRANSFORM[3].xyz);
-	
+
 	// Restart at a new valid position
 	if (TRANSFORM[3].xyz == vec3(0.0) || linear_dist > emission_sphere_radius && RESTART_POSITION) {
 		float s = rand_from_seed(alt_seed) * 2.0 - 1.0;
 		float t = rand_from_seed(alt_seed) * 2.0 * PI;
 		float radius = emission_sphere_radius * sqrt(1.0 - s * s);
-		
+
 		// Sphere emission, surface
 		TRANSFORM[3].xyz = vec3(radius * cos(t), radius * sin(t), emission_sphere_radius * s);
-		
+
 		// Sphere emission, volume
 		//float p = rand_from_seed(alt_seed);
 		//TRANSFORM[3].xyz = mix(vec3(0.0, 0.0, 0.0), vec3(radius * cos(t), radius * sin(t), emission_sphere_radius * s), p);
-		
+
 		if (RESTART_VELOCITY) {
 			VELOCITY = (EMISSION_TRANSFORM * vec4(VELOCITY, 0.0)).xyz;
 		}
-		
+
 		vec3 time_noise = noise_3d( vec3(TIME) * turbulence_noise_speed_random ) * -turbulence_noise_speed;
 		vec3 noise_direction = get_noise_direction(TRANSFORM[3].xyz, EMISSION_TRANSFORM[3].xyz, time_noise);
 		float turb_init_displacement = mix(turbulence_initial_displacement_min, turbulence_initial_displacement_max, rand_from_seed(alt_seed));	TRANSFORM[3].xyz += noise_direction * turb_init_displacement;
@@ -136,22 +136,22 @@ void start() {
 
 void process() {
 	uint alt_seed = hash(NUMBER + uint(1) + RANDOM_SEED);
-	
+
 	// apply attractor forces
 	vec3 force = gravity + ATTRACTOR_FORCE;
 	VELOCITY += force * DELTA;
-	
+
 	// apply turbulence
 	const float turbulence_influence = 1.0;
 	vec3 time_noise = noise_3d( vec3(TIME) * turbulence_noise_speed_random ) * -turbulence_noise_speed;
 	vec3 noise_direction = get_noise_direction(TRANSFORM[3].xyz, EMISSION_TRANSFORM[3].xyz, time_noise);
-	
+
 	if (!COLLIDED) {
 		float vel_mag = length(VELOCITY);
 		float vel_infl = clamp(mix(turbulence_influence_min, turbulence_influence_max, rand_from_seed(alt_seed)) * turbulence_influence, 0.0, 1.0);
 		VELOCITY = mix(VELOCITY, normalize(noise_direction) * vel_mag * (1.0 + (1.0 - vel_infl) * 0.2), vel_infl);
 	}
-	
+
 	// If particle is outside the emission sphere, set it inactive and allow it
 	// to respawn.
 	float linear_dist = length(TRANSFORM[3].xyz - EMISSION_TRANSFORM[3].xyz);

@@ -124,6 +124,11 @@ varying float wave_height;
 varying float foam_mix_factor;
 varying float foam_specular_factor;
 
+//Get the LEAN Mapping values from the compute shader
+uniform sampler2D lean_B_texture;
+uniform sampler2D lean_M_texture;
+uniform sampler2D normal_texture;
+
 
 vec2 lod_morph(float morph_factor, vec2 grid_pos) {
 	vec2 fracPart = fract(grid_pos.xy * vertex_resolution * 0.5) * 2.0 / vertex_resolution;
@@ -137,6 +142,17 @@ vec3 HDR(vec3 color, float e) {
 
 
 void vertex() {
+
+	float linear_dist = length(VERTEX - CAMERA_POSITION_WORLD);
+
+	// LOD Morph
+	float morph_factor = (clamp(linear_dist, min_lod_morph_distance, max_lod_morph_distance) - min_lod_morph_distance) / (max_lod_morph_distance - min_lod_morph_distance);
+	VERTEX.xz -= lod_morph(morph_factor, UV);
+
+	// Domain Warp
+	vec2 domain_warped_uv = domain_warp(VERTEX.xz, linear_dist);
+
+
 	// Vertex Offset
 	vec3 displacement;
 	displacement = get_displacement_tiling_gaussian( cascade_displacements,VERTEX.xz);
@@ -147,8 +163,27 @@ void vertex() {
 
 	VERTEX += displacement;
 	world_vertex = VERTEX;
-}
 
+
+	// Surface Normals & Jacobian
+	//vec4 nj = get_normals_tb(domain_warped_uv, displacement);
+	vec4 nj = get_normals_jacobian(domain_warped_uv, displacement);
+	NORMAL = nj.xyz * normal_factor;
+	jacobian_determinant = nj.w;
+
+	// Wave Amplitude Distance Fade
+	// Flattens the waves with increasing distance from camera. This is done
+	// after surface normal calculations to retain normals in the distance.
+	float amplitude_fade_range = clamp(linear_dist, 0.0, amplitude_scale_fade_distance) / amplitude_scale_fade_distance;
+	VERTEX.y *= mix(amplitude_scale_max, amplitude_scale_min, amplitude_fade_range);
+
+	// Planetary Curve
+	// Take distance squared from camera to vertex, multiply by strength factor,
+	// subtract from vertex Y.
+	float curvation = planetary_curve_strength * (pow(abs(domain_warped_uv.x - CAMERA_POSITION_WORLD.x), 2.0) + pow(abs(domain_warped_uv.y - CAMERA_POSITION_WORLD.z), 2.0));
+	VERTEX.y -= curvation;
+
+}
 
 void fragment() {
 	// Calculate fragments Fresnel factor
@@ -188,17 +223,58 @@ void fragment() {
 	float fade_start = view_distance_max * view_fade_start;
 	ALPHA = 1.0 - (clamp(linear_dist, fade_start, view_distance_max) - fade_start) / (view_distance_max - fade_start);
 
+
+	//LEAN Mapping implementation
+
+	//Calculate "h" in from his implementation
+	vec3 light_dir = vec3(0.0, 1.0, 0.0); //placeholder for light direction idk if it works
+	vec3 half_vec = normalize(VIEW + light_dir);
+
+	//get lean textures at the right positions
+	vec2 lean_uv = world_vertex.xz * uv_scale;
+	vec2 B = texture(lean_B_texture, lean_uv).xy;
+	vec3 M = texture(lean_M_texture, lean_uv).xyz;
+	vec3 N = texture(normal_texture, lean_uv).xyz;
+
+	//cov + det
+	vec3 cov_matrix = M - vec3(B.x*B.x - 1.0/2.0, B.y*B.y, B.x*B.y / 1.0/2.0);
+	float det = cov_matrix.x * cov_matrix.y - cov_matrix.z * cov_matrix.z;
+
+	//specular term
+	vec2 h_bar = half_vec.xy / half_vec.z - B;
+	float e = (h_bar.x*h_bar.x*cov_matrix.y + h_bar.y*h_bar.y*cov_matrix.x - 2.0*h_bar.x*h_bar.y*cov_matrix.z);
+
+	//convert
+	if(det > 0.0){
+	    float lean_specular = exp(-0.5 * e / sqrt(det));
+	    SPECULAR = lean_specular;
+	}
+	else{
+	    SPECULAR = 0.0;
+	}
+
 	// Misc. PBR Settings
 	ROUGHNESS = foam_mix_factor + 0.02;
 	METALLIC = pbr_metallic_strength * foam_specular_factor;
 	SPECULAR = pbr_specular_strength * foam_specular_factor * fresnel_factor + pbr_specular_offset;
 
 	wave_height = world_vertex.y;
+
 	
 	// lean mapping 
 	if(lean_mapping){
 		NORMAL = lean_mapping_tiled_normal(world_vertex.xz);
 	}
+=======
+
+	ROUGHNESS = 0.0;
+	METALLIC = 0.0;
+	SPECULAR = 0.0;
+
+	//ALBEDO = vec3(B, 0.); //display b map
+	//ALBEDO = NORMAL; // Display the normal map as colors
+	//ALBEDO = N; //Display our compute shader normal
+
 }
 
 

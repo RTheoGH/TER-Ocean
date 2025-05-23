@@ -67,7 +67,11 @@ class_name OceanEnvironment
 ## transitioned to below water.
 var player_is_surfaced := false
 
+
 var lod_fake_distance := 1.0;
+
+var lean_mapping_enabled := false
+
 
 
 func _ready() -> void:
@@ -189,6 +193,7 @@ func _get_configuration_warnings() -> PackedStringArray:
 	return result
 
 
+
 func _on_tb_enabled_toggled(toggled_on:bool) -> void:
 	print("Tiling and blending: ", toggled_on)
 	ocean._tb_enabled = toggled_on
@@ -232,3 +237,7 @@ func _on_debug_normal_toggled(toggled_on:bool) -> void:
 
 func _on_lean_mapping_toggled(toggled_on:bool) -> void:
 	ocean.material.set_shader_parameter("lean_mapping", toggled_on);
+
+func _on_lean_enabled_toggled(toggled_on: bool) -> void:
+	lean_mapping_enabled = not lean_mapping_enabled
+

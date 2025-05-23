@@ -242,22 +242,23 @@ vec3 get_displacement(vec2 uv) {
 	displacement += texture(cascade_displacements,
 			uv  * uv_scale * (1.0 / cascade_uv_scales) + wind_uv_offset * cascade_uv_scales).rgb;
 
+
 	return displacement;
 }
-
 
 // Calculate surface normals and Jacobian determinant for a given coordinate.
 // The normal will be packed in the XYZ channels, and the Jacobian determinant
 // will be packed in the W channel.
-vec4 get_normals_jacobian(vec2 uv, vec3 displacement) {
+vec4 get_normals_jacobian(vec2 uv, vec3 displacement){
 	// Surface Normals
 
 	float offset = 1.0;
 
-	vec3 right = (vec3(offset, get_displacement_tiling_gaussian(cascade_displacements,uv + vec2(offset, 0.0)).y, 0.0)) - displacement;
-	vec3 left = (vec3(-offset, get_displacement_tiling_gaussian(cascade_displacements, uv + vec2(-offset, 0.0)).y, 0.0)) - displacement;
-	vec3 bottom = (vec3(0.0, get_displacement_tiling_gaussian( cascade_displacements,uv + vec2(0.0, offset)).y, offset)) - displacement;
-	vec3 top = (vec3(0.0, get_displacement_tiling_gaussian( cascade_displacements,uv + vec2(0.0, -offset)).y, -offset)) - displacement;
+	vec3 right = (vec3(offset, get_displacement(uv + vec2(offset, 0.0)).y, 0.0)) - displacement;
+	vec3 left = (vec3(-offset, get_displacement(uv + vec2(-offset, 0.0)).y, 0.0)) - displacement;
+	vec3 bottom = (vec3(0.0, get_displacement(uv + vec2(0.0, offset)).y, offset)) - displacement;
+	vec3 top = (vec3(0.0, get_displacement(uv + vec2(0.0, -offset)).y, -offset)) - displacement;
+
 
 	vec3 top_right = cross(right, top);
 	vec3 top_left = cross(top, left);
@@ -276,6 +277,8 @@ vec4 get_normals_jacobian(vec2 uv, vec3 displacement) {
 
 	return vec4(normal, jacobian_determinant);
 }
+
+
 
 // Apply domain warp to the given coordinate. This has no effect at 0 distance,
 // and gets stronger linearly as distance increases. It will reach 100% strength

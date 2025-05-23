@@ -16,9 +16,11 @@ enum Binding {
 	PONG = 26,
 	INPUT = 27,
 	OUTPUT = 28,
+
 	TB_DISPLACEMENT = 29,
 	GAUSSIAN_AVERAGE = 30,
 	LEAN_NORMAL = 31,
+
 	LEAN_B = 32,
 	LEAN_M = 33,
 }
@@ -67,7 +69,7 @@ enum FFTResolution {
 @export_range(-1, 30, 1) var heightmap_sync_frameskip := 0
 
 ## The resolution to generate the displacement maps at via FFT in the compute
-## shaders.
+## shaders.FFTResolution
 @export var fft_resolution:FFTResolution = FFTResolution.FFT_256x256:
 	set(new_fft_resolution):
 		fft_resolution = new_fft_resolution
@@ -174,7 +176,6 @@ enum FFTResolution {
 		wave_vector = wave_vector.normalized() * new_wave_length
 	get:
 		return wave_vector.length()
-
 
 var initialized := false
 
@@ -287,11 +288,50 @@ var _rng := RandomNumberGenerator.new()
 var _tb_enabled := true
 var _tb_scale := 20.0
 
+##ANDREW : normal compute 
+
+##RID = Low level resource called by its unique ID 
+## https://docs.godotengine.org/en/stable/classes/class_rid.html
+
+var _normal_shader: RID #Access to the shader itself
+var _normal_pipeline: RID #To eventually create a pipeline for it, i guess for optimisation?
+var _normal_tex : RID #not sure why i made this tbh
+var _normal_texture : Texture2DRD #Texture
+var _normal_uniform = RDUniform.new() #uniform for our output 
+var _displacement_uniform = RDUniform.new() #uniform for our input (will be waves_texture)
+
+##ANDREW : addig the shader resources for the LEAN map compute
+
+var _lean_shader: RID #Access to the shader itself
+var _lean_pipeline: RID #create a pipeline for it
+#output
+#again idk what tex does
+var _lean_b_tex: RID
+var _lean_m_tex: RID
+#texture images
+var _lean_b_image: Image
+var _lean_m_image: Image
+#actual textures
+var _lean_b_texture: Texture2DRD
+var _lean_m_texture: Texture2DRD 
+#output uniforms
+var _lean_b_uniform: RDUniform 
+var _lean_m_uniform: RDUniform
+
+
+#for now does nothing, eventually to enable and disable lean mapping in real time
+var _lean_enabled := true
+
+
 ## Initialize the simulation
 func initialize_simulation() -> void:
 	_rng.randomize()
+
 	material.set_shader_parameter("tb_enabled", _tb_enabled)
 	material.set_shader_parameter("tb_scale", _tb_scale)
+
+	material.set_shader_parameter("lean_enabled", _lean_enabled)
+
 	RenderingServer.call_on_render_thread(_initialize_simulation)
 
 
@@ -324,6 +364,7 @@ func simulate(delta:float) -> void:
 		
 		RenderingServer.call_on_render_thread(_simulate.bind(_accumulated_delta, sync_heightmap))
 		_accumulated_delta = 0.0
+
 
 
 ## Simulate a single iteration of the ocean. Ignores frameskip and simulation
@@ -429,7 +470,9 @@ func get_waves() -> Image:
 ## Get the wave displacement map of a single cascade as a Texture2DRD.
 func get_waves_texture() -> Texture2DRD:
 	assert(initialized, "Ocean3D not initialized")
+	print(_waves_texture)
 	return _waves_texture
+
 
 func get_lean_normal() -> Image:
 	assert(initialized, "Ocean3D not initialized")
@@ -437,7 +480,25 @@ func get_lean_normal() -> Image:
 
 func get_lean_normal_texture() -> Texture2DRD:
 	assert(initialized, "Ocean3D not initialized")
-	return _lean_normal_texture
+	return _normal_texture
+
+##ANDREW : get the lean map texture ???
+func get_lean_b_texture() -> Texture2DRD:
+	assert(initialized, "Ocean3D not initialized")
+	print(_lean_b_texture)
+
+	#Prints to help debug
+	var texture_data = _rd.texture_get_data(_lean_b_tex, 0)
+	var image = Image.create_from_data(fft_resolution, fft_resolution, false, Image.FORMAT_RGF, texture_data)
+	for y in range(image.get_height()):	
+		for x in range(image.get_width()):
+			var pixel = image.get_pixel(x, y)
+			if(pixel.r != 0.0 or pixel.g != 0.0 or pixel.b != 0.0):
+				print("Pixel at (", x, ",", y, "): ", pixel)
+			#print("Pixel at (", x, ",", y, "): ", pixel)
+	
+	return _lean_b_texture
+
 
 func get_lean_B() -> Image:
 	assert(initialized, "Ocean3D not initialized")
@@ -547,7 +608,67 @@ func _initialize_simulation() -> void:
 	_initial_spectrum_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_IMAGE
 	_initial_spectrum_uniform.binding = Binding.INITIAL_SPECTRUM
 	_initial_spectrum_uniform.add_id(_initial_spectrum_tex)
+
+	##ANDREW initialize the normal map shader and texture
+
+	#Load the compute shader file's ID i guess?
+	_normal_shader = _rd.shader_create_from_spirv(load("res://addons/tessarakkt.oceanfft/shaders/ComputeNormals.glsl").get_spirv())
+	#Create the pipeline from that shader
+	_normal_pipeline = _rd.compute_pipeline_create(_normal_shader)
+	#initialize the textures
+	_normal_texture = Texture2DRD.new()
 	
+	_normal_tex = _rd.texture_create(_fmt_rg32f, RDTextureView.new(), [initial_image_rgf.get_data()])
+	#assign the texture its id 
+	_normal_texture.texture_rd_rid = _normal_tex
+	#start binding the normal map (not sure if this is necessary)
+	_normal_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_IMAGE
+	_normal_uniform.binding = Binding.NORMAL_MAP
+	_normal_uniform.add_id(_normal_tex)
+	_displacement_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_IMAGE
+	_displacement_uniform.binding = Binding.DISPLACEMENT
+
+	##ANDREW : initialize the lean map shader and texture i guess
+	## lowkey i think this is actually correct
+	#Load the lean compute shader file's id
+	_lean_shader = _rd.shader_create_from_spirv(load("res://addons/tessarakkt.oceanfft/shaders/ComputeLEAN.glsl").get_spirv())
+	#create a pipeline with it
+	_lean_pipeline = _rd.compute_pipeline_create(_lean_shader)
+	
+	#B map texture 
+	#create the image+texture 
+	_lean_b_image = Image.create(fft_resolution, fft_resolution, false, Image.FORMAT_RGF)
+	_lean_b_texture = Texture2DRD.new()
+	_lean_b_tex = _rd.texture_create(_fmt_rg32f, RDTextureView.new(), [_lean_b_image.get_data()])
+	#assign its id from the tex
+	_lean_b_texture.texture_rd_rid = _lean_b_tex
+	#bind its uniform
+	_lean_b_uniform = RDUniform.new()
+	_lean_b_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_IMAGE
+	_lean_b_uniform.binding = Binding.LEAN_B
+	_lean_b_uniform.add_id(_lean_b_tex)
+
+	#M map texture 
+	#create the image+texture 
+	_lean_m_image = Image.create(fft_resolution, fft_resolution, false, Image.FORMAT_RGF)
+	_lean_m_texture = Texture2DRD.new()
+	_lean_m_tex = _rd.texture_create(_fmt_rg32f, RDTextureView.new(), [_lean_m_image.get_data()])
+	#assign its id from the tex
+	_lean_m_texture.texture_rd_rid = _lean_m_tex
+	#bind its uniform
+	_lean_m_uniform = RDUniform.new()
+	_lean_m_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_IMAGE
+	_lean_m_uniform.binding = Binding.LEAN_M
+	_lean_m_uniform.add_id(_lean_m_tex)
+
+	#I think this is in the .tres file
+	#not 100% sure how to make these work, and why they're necessary
+	#i think this makes it so the other shaders can access the maps
+	material.set_shader_parameter("lean_enabled", _lean_enabled)
+	material.set_shader_parameter("lean_b_map", _lean_b_texture)
+	material.set_shader_parameter("lean_m_map", _lean_m_texture)
+
+
 	#### Compile & Initialize Phase Shader
 	############################################################################
 	## Applies time based flow to a crafted random data spectrum.
@@ -563,6 +684,7 @@ func _initialize_simulation() -> void:
 	_phase_settings_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
 	_phase_settings_uniform.binding = Binding.SETTINGS
 	_phase_settings_uniform.add_id(_phase_settings_buffer)
+
 	
 	#### Initialize Ping Pong Buffer Textures
 	############################################################################
@@ -750,6 +872,7 @@ func _initialize_simulation() -> void:
 ## This must be called via RenderingServer.call_on_render_thread().
 func _simulate(delta: float, sync_heightmap: bool) -> void:
 	if _is_initial_spectrum_changed:
+
 		_run_initial_spectrum_pass()
 	_run_phase_pass(delta)
 	_run_spectrum_pass()
