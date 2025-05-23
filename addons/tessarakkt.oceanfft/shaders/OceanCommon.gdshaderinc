@@ -56,6 +56,38 @@ uniform sampler2D domain_warp_texture;
 
 group_uniforms;
 
+vec2 hash ( vec2 p)
+{
+return fract ( sin (( p ) * mat2 (vec2(127.1 , 311.7 ),vec2( 269.5 , 183.3)))*43758.5453) ;
+}
+
+void TriangleGrid ( vec2 uv ,out float w1 , out float w2 , out float w3 ,out ivec2 vertex1 , out ivec2 vertex2 , out ivec2 vertex3 ){
+	// Scaling of the input
+	uv *= 3.464; // 2 * sqrt (3)
+	// Skew input space into simplex triangle grid
+	const mat2 gridToSkewedGrid = mat2 (vec2(1.0 , 0.0) ,vec2( -0.57735027 , 1.15470054)) ;
+	vec2 skewedCoord = gridToSkewedGrid * uv ;
+	// Compute local triangle vertex IDs and local barycentric coordinates
+	ivec2 baseId = ivec2 ( floor ( skewedCoord ));
+	vec3 temp = vec3 ( fract ( skewedCoord ) , 0) ;
+	temp .z = 1.0 - temp . x - temp .y;
+	if ( temp . z > 0.0){
+		w1 = temp .z;
+		w2 = temp .y;
+		w3 = temp .x;
+		vertex1 = baseId ;
+		vertex2 = baseId + ivec2 (0 , 1) ;
+		vertex3 = baseId + ivec2 (1 , 0) ;
+	}
+	else{
+		w1 = - temp .z ;
+		w2 = 1.0 - temp .y;
+		w3 = 1.0 - temp .x;
+	vertex1 = baseId + ivec2 (1 , 1) ;
+	vertex2 = baseId + ivec2 (1 , 0) ;
+	vertex3 = baseId + ivec2 (0 , 1) ;
+	}
+}
 
 // utiliser une texture pour calculer la direction des vagues
 vec2 get_flow_direction(vec2 uv) {
