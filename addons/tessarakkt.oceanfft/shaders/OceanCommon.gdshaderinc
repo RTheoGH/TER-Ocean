@@ -27,6 +27,9 @@ uniform sampler2D cascade_displacements;
 
 uniform sampler2D tb_displacement_map;
 
+uniform sampler2D flow_map;
+
+
 // The maximum distance from the camera a fragment can be visible. Beyond this
 // distance the fragment will have ALPHA = 0.0
 // This is set on initialization only by Quadtree3D._ready()
@@ -59,7 +62,8 @@ group_uniforms;
 
 // utiliser une texture pour calculer la direction des vagues
 vec2 get_flow_direction(vec2 uv) {
-    // vec2 flow = texture(flow_map, uv).rg;
+	vec2 flow = texture(flow_map, uv).rg;
+	return normalize(flow);
 	
     //vec2 flow = uv - vec2(0.5, 0.5);
 	//if(uv.x < 0.5){
@@ -68,8 +72,8 @@ vec2 get_flow_direction(vec2 uv) {
 	//if(uv.y < 0.5){
 		//uv.y = -uv.y;
 	//}
-	if(uv == vec2(0, 0)) return normalize(vec2(0.001, 0));
-	return normalize(uv);
+	//if(uv == vec2(0, 0)) return normalize(vec2(0.001, 0));
+	//return normalize(uv);
 }
 
 uniform float tb_scale = 1.0;

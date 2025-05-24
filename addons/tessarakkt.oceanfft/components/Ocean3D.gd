@@ -265,6 +265,9 @@ func initialize_simulation() -> void:
 	_rng.randomize()
 	material.set_shader_parameter("tb_enabled", _tb_enabled)
 	material.set_shader_parameter("tb_scale", _tb_scale)
+	var texture = load("res://addons/tessarakkt.oceanfft/graphics/flow_map.png")
+	material.set_shader_parameter("flow_map", texture)
+
 	RenderingServer.call_on_render_thread(_initialize_simulation)
 
 
