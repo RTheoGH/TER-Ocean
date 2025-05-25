@@ -147,10 +147,6 @@ void vertex() {
 
 	VERTEX += displacement;
 	world_vertex = VERTEX;
-
-	vec4 nj = get_normals_jacobian(VERTEX.xz, displacement);
-	NORMAL = nj.xyz * normal_factor;
-	jacobian_determinant = nj.w;
 }
 
 

@@ -79,23 +79,6 @@ vec2 get_flow_direction(vec2 uv) {
 	//return normalize(uv);
 }
 
-
-// utiliser une texture pour calculer la direction des vagues
-vec2 get_flow_direction(vec2 uv) {
-	vec2 flow = texture(flow_map, uv).rg;
-	return normalize(flow);
-	
-    //vec2 flow = uv - vec2(0.5, 0.5);
-	//if(uv.x < 0.5){
-		//uv.x = -uv.x;
-	//}
-	//if(uv.y < 0.5){
-		//uv.y = -uv.y;
-	//}
-	//if(uv == vec2(0, 0)) return normalize(vec2(0.001, 0));
-	//return normalize(uv);
-}
-
 uniform float tb_scale = 5.0;
 uniform float grid_scale = 5.0;
 
@@ -212,15 +195,35 @@ vec3 get_displacement_tiling_gaussian(sampler2D tex, vec2 uv)
 	vec2 uv1 = uv + hash2(vec2(vertex1));
 	vec2 uv2 = uv + hash2(vec2(vertex2));
 	vec2 uv3 = uv + hash2(vec2(vertex3));
+	
+	vec2 hexaCenter1 = TriangleGridToUV(vertex1);
+	vec2 hexaCenter2 = TriangleGridToUV(vertex2);
+	vec2 hexaCenter3 = TriangleGridToUV(vertex3);
 
-	vec3 G1 = texture(tex, uv1 + wind_uv_offset).rgb;
-	vec3 G2 = texture(tex, uv2 + wind_uv_offset).rgb;
-	vec3 G3 = texture(tex, uv3 + wind_uv_offset).rgb;
+	vec2 flow_direction1 = get_flow_direction(hexaCenter1);
+	vec2 flow_direction2 = get_flow_direction(hexaCenter2);
+	vec2 flow_direction3 = get_flow_direction(hexaCenter3);
+	
+	float theta1 = atan(flow_direction1.y, flow_direction1.x) - atan(wind_uv_offset.y, wind_uv_offset.x);
+	float theta2 = atan(flow_direction2.y, flow_direction2.x) - atan(wind_uv_offset.y, wind_uv_offset.x);
+	float theta3 = atan(flow_direction3.y, flow_direction3.x) - atan(wind_uv_offset.y, wind_uv_offset.x);
+	
+	mat2 rotation2_1 = mat2(vec2(cos(theta1), -sin(theta1)), vec2(sin(theta1), cos(theta1)));
+	mat2 rotation2_2 = mat2(vec2(cos(theta2), -sin(theta2)), vec2(sin(theta2), cos(theta2)));
+	mat2 rotation2_3 = mat2(vec2(cos(theta3), -sin(theta3)), vec2(sin(theta3), cos(theta3)));
+
+	vec3 G1 = texture(tex, rotation2_1 * uv1 + wind_uv_offset).rgb;
+	vec3 G2 = texture(tex, rotation2_2 * uv2 + wind_uv_offset).rgb;
+	vec3 G3 = texture(tex, rotation2_3 * uv3 + wind_uv_offset).rgb;
+	
+	mat3 rotation3_1 = mat3(vec3(cos(theta1), 0, -sin(theta1)), vec3(0, 1, 0), vec3(sin(theta1), 0, cos(theta1)));
+	mat3 rotation3_2 = mat3(vec3(cos(theta2), 0, -sin(theta2)), vec3(0, 1, 0), vec3(sin(theta2), 0, cos(theta2)));
+	mat3 rotation3_3 = mat3(vec3(cos(theta3), 0, -sin(theta3)), vec3(0, 1, 0), vec3(sin(theta3), 0, cos(theta3)));
 
 	vec3 average = textureLod(tex, uv, lod_fake_distance).rgb;
 
 	//Linear blending a changer
-	vec3 color = w1 * G1 + w2 * G2 + w3 * G3;
+	vec3 color = w1 * rotation3_1 * G1 + w2 * rotation3_2 * G2 + w3 * rotation3_3 * G3;
 	color -= vec3(average);
 	color /= sqrt((w1*w1)+ (w2*w2) + (w3*w3));
 	color += vec3(average);
