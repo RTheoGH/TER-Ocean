@@ -131,7 +131,20 @@ void vertex() {
 
 
 void fragment() {
-	vec3 displacement = get_displacement_tiling(world_vertex.xz );
-	ALBEDO = displacement;
-	ALBEDO = get_normals_jacobian(world_vertex.xz, displacement ).xyz;
+	vec3 displacement = get_displacement_tiling_gaussian(cascade_displacements, world_vertex.xz );
+	if(debug_displacement){
+		ALBEDO = displacement;
+	}else if(debug_normal){
+		ALBEDO = get_displacement_tiling_gaussian(lean_normal_texture, world_vertex.xz ); //get_normals_jacobian(world_vertex.xz, displacement ).xyz / 1.2;
+	}else{
+		//vec2 uv = world_vertex.xz * tb_scale * 0.0000625;
+		//ALBEDO = textureLod(cascade_displacements, uv, lod_fake_distance).rgb;
+		ALBEDO = lean_mapping_tiled_normal(world_vertex.xz);
+	}
+
+	vec2 uv = world_vertex.xz * tb_scale * 0.0000625;
+	//ALBEDO = textureLod(lean_B_texture, uv, lod_fake_distance).rgb;
+	//vec2 uv = world_vertex.xz * tb_scale * 0.0000625;
+	//ALBEDO = texture(lean_normal_texture, uv).rgb;
+
 }

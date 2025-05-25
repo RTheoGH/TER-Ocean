@@ -67,6 +67,8 @@ class_name OceanEnvironment
 ## transitioned to below water.
 var player_is_surfaced := false
 
+var lod_fake_distance := 1.0;
+
 
 func _ready() -> void:
 	var camera := get_viewport().get_camera_3d()
@@ -204,3 +206,29 @@ func _on_debug_enabled_toggled(toggled_on:bool) -> void:
 func _on_tb_scale_slider_value_changed(value:float) -> void:
 	ocean._tb_scale = value
 	ocean.material.set_shader_parameter("tb_scale", ocean._tb_scale)
+
+func _on_grid_scaling_slider_value_changed(value:float) -> void:
+	ocean.material.set_shader_parameter("grid_scale", value)
+
+
+
+
+func _on_lodslider_value_changed(value:float) -> void:
+	lod_fake_distance = value
+	print("fake distance is")
+	print(lod_fake_distance)
+	ocean.material.set_shader_parameter("lod_fake_distance", lod_fake_distance)
+
+
+func _on_debug_displacement_toggled(toggled_on:bool) -> void:
+	ocean.material.set_shader_parameter("debug_displacement", toggled_on)
+
+
+func _on_debug_normal_toggled(toggled_on:bool) -> void:
+	ocean.material.set_shader_parameter("debug_normal", toggled_on)
+
+
+
+
+func _on_lean_mapping_toggled(toggled_on:bool) -> void:
+	ocean.material.set_shader_parameter("lean_mapping", toggled_on);
