@@ -221,11 +221,16 @@ vec3 get_displacement_tiling_gaussian(sampler2D tex, vec2 uv)
 	mat3 rotation3_3 = mat3(vec3(cos(theta3), 0, -sin(theta3)), vec3(0, 1, 0), vec3(sin(theta3), 0, cos(theta3)));
 
 	vec3 average = textureLod(tex, uv, lod_fake_distance).rgb;
+	
+	vec3 G1_rot = rotation3_1 * (G1 - average);
+	vec3 G2_rot = rotation3_2 * (G2 - average);
+	vec3 G3_rot = rotation3_3 * (G3 - average);
 
 	//Linear blending a changer
-	vec3 color = w1 * rotation3_1 * G1 + w2 * rotation3_2 * G2 + w3 * rotation3_3 * G3;
-	color -= vec3(average);
-	color /= sqrt((w1*w1)+ (w2*w2) + (w3*w3));
+	//vec3 color = w1 * rotation3_1 * G1  + w2 * rotation3_2 * G2  + w3 * rotation3_3 * G3;
+	vec3 color = w1 * G1_rot  + w2 * G2_rot  + w3 * G3_rot;
+	//color -= vec3(average);
+	color /= sqrt((w1*w1) + (w2*w2) + (w3*w3));
 	color += vec3(average);
 
 	return color;
