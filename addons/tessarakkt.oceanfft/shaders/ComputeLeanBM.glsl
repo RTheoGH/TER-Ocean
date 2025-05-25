@@ -21,6 +21,9 @@ void main(){
     ivec2 pixel_coord = ivec2(gl_GlobalInvocationID.xy);
     vec3 normal = imageLoad(u_normals_input, pixel_coord).rgb;
 
+    // Flip the coordinates to make Godot compatible with the paper's logic
+    normal = vec3(normal.x,normal.z,normal.y);
+
     if (normal.z == 0.0) normal.z = 0.00001;
     vec2 B = normal.xy / normal.z;
     vec3 M = vec3(B.x * B.x, B.y * B.y, B.x * B.y);
