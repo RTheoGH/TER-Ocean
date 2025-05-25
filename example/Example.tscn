@@ -63,6 +63,7 @@ shader_parameter/lod_fake_distance = 0.0
 shader_parameter/debug_normal = false
 shader_parameter/debug_displacement = true
 shader_parameter/lean_mapping = false
+shader_parameter/orientation = false
 shader_parameter/splash_subparticles = 10
 shader_parameter/splash_jacobian_limit = -3.0
 shader_parameter/splash_coverage = 1.0
@@ -107,6 +108,7 @@ shader_parameter/lod_fake_distance = 0.0
 shader_parameter/debug_normal = false
 shader_parameter/debug_displacement = true
 shader_parameter/lean_mapping = false
+shader_parameter/orientation = false
 shader_parameter/splash_subparticles = 10
 shader_parameter/splash_jacobian_limit = -3.0
 shader_parameter/splash_coverage = 1.0
@@ -336,6 +338,10 @@ text = "debug displacement"
 layout_mode = 2
 text = "debug normal"
 
+[node name="WaveOrientation" type="CheckButton" parent="CanvasLayer/PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "WaveOrientation"
+
 [node name="LeanMapping" type="CheckButton" parent="CanvasLayer/PanelContainer/VBoxContainer"]
 layout_mode = 2
 text = "Lean mapping"
@@ -450,6 +456,7 @@ grow_vertical = 2
 [connection signal="toggled" from="CanvasLayer/PanelContainer/VBoxContainer/DebugEnabled" to="." method="_on_debug_enabled_toggled"]
 [connection signal="toggled" from="CanvasLayer/PanelContainer/VBoxContainer/debugDisplacement" to="." method="_on_debug_displacement_toggled"]
 [connection signal="toggled" from="CanvasLayer/PanelContainer/VBoxContainer/debugNormal" to="." method="_on_debug_normal_toggled"]
+[connection signal="toggled" from="CanvasLayer/PanelContainer/VBoxContainer/WaveOrientation" to="." method="_on_wave_orientation_toggled"]
 [connection signal="toggled" from="CanvasLayer/PanelContainer/VBoxContainer/LeanMapping" to="." method="_on_lean_mapping_toggled"]
 [connection signal="value_changed" from="CanvasLayer/PanelContainer/VBoxContainer/tbScaleSlider" to="." method="_on_tb_scale_slider_value_changed"]
 [connection signal="value_changed" from="CanvasLayer/PanelContainer/VBoxContainer/GridScalingSlider" to="." method="_on_grid_scaling_slider_value_changed"]

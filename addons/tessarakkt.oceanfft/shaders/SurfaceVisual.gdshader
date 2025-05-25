@@ -139,7 +139,12 @@ vec3 HDR(vec3 color, float e) {
 void vertex() {
 	// Vertex Offset
 	vec3 displacement;
-	displacement = get_displacement_tiling_gaussian( cascade_displacements,VERTEX.xz);
+	
+	if(orientation){
+		displacement = get_displacement_tiling_gaussian_plus_orientation( cascade_displacements,VERTEX.xz);
+	}else{
+		displacement = get_displacement_tiling_gaussian( cascade_displacements,VERTEX.xz);
+	}
 
 	vec3 nj = get_displacement_tiling_gaussian( lean_normal_texture,VERTEX.xz);
 	NORMAL = nj.xyz;
@@ -198,8 +203,8 @@ void fragment() {
 	SPECULAR = pbr_specular_strength * foam_specular_factor * fresnel_factor + pbr_specular_offset;
 
 	wave_height = world_vertex.y;
-	
-	// lean mapping 
+
+	// lean mapping
 	if(lean_mapping){
 		NORMAL += lean_mapping_tiled_normal(world_vertex.xz);
 	}

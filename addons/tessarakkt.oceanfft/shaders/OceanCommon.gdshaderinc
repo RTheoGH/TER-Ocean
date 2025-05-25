@@ -87,6 +87,7 @@ uniform bool debug_normal = false;
 uniform bool debug_displacement = true;
 
 uniform bool lean_mapping = false;
+uniform bool orientation = false;
 
 uniform sampler2D lean_normal_texture : filter_linear_mipmap_anisotropic;
 uniform sampler2D lean_B_texture : filter_linear_mipmap_anisotropic;
@@ -182,6 +183,36 @@ vec3 get_displacement_tiling(vec2 uv)
 }
 
 vec3 get_displacement_tiling_gaussian(sampler2D tex, vec2 uv)
+{
+	vec2 grid_uv = uv * grid_scale * 0.0000625;
+	uv *=  tb_scale * 0.0000625;
+
+	// Get triangle info
+	float w1, w2, w3;
+	ivec2 vertex1, vertex2, vertex3;
+	TriangleGrid(grid_uv, w1, w2, w3, vertex1, vertex2, vertex3);
+
+	// Assign random offset to each triangle vertex
+	vec2 uv1 = uv + hash2(vec2(vertex1));
+	vec2 uv2 = uv + hash2(vec2(vertex2));
+	vec2 uv3 = uv + hash2(vec2(vertex3));
+
+	vec3 G1 = texture(tex, uv1 + wind_uv_offset).rgb;
+	vec3 G2 = texture(tex, uv2 + wind_uv_offset).rgb;
+	vec3 G3 = texture(tex, uv3 + wind_uv_offset).rgb;
+	
+	vec3 average = textureLod(tex, uv, lod_fake_distance).rgb;
+
+	//Linear blending a changer
+	vec3 color = w1 * G1  + w2 * G2  + w3 * G3;
+	color -= vec3(average);
+	color /= sqrt((w1*w1) + (w2*w2) + (w3*w3));
+	color += vec3(average);
+
+	return color;
+}
+
+vec3 get_displacement_tiling_gaussian_plus_orientation(sampler2D tex, vec2 uv)
 {
 	vec2 grid_uv = uv * grid_scale * 0.0000625;
 	uv *=  tb_scale * 0.0000625;
