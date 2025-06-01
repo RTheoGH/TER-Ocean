@@ -124,6 +124,7 @@ varying float wave_height;
 varying float foam_mix_factor;
 varying float foam_specular_factor;
 
+// varying float lean_spec;
 
 vec2 lod_morph(float morph_factor, vec2 grid_pos) {
 	vec2 fracPart = fract(grid_pos.xy * vertex_resolution * 0.5) * 2.0 / vertex_resolution;
@@ -160,6 +161,8 @@ void vertex() {
 
 
 void fragment() {
+
+	// initialize the lean spec in case
 	// Calculate fragments Fresnel factor
 	float fresnel_factor = pow(1.0 - dot(NORMAL, normalize(VIEW)), fresnel_power);
 	float fresnel = fresnel_factor * fresnel_strength + fresnel_offset;
@@ -203,19 +206,42 @@ void fragment() {
 	SPECULAR = pbr_specular_strength * foam_specular_factor * fresnel_factor + pbr_specular_offset;
 
 	wave_height = world_vertex.y;
-
-	// lean mapping
-	if(lean_mapping){
-		NORMAL += lean_mapping_tiled_normal(world_vertex.xz);
-	}
 }
 
 
 void light() {
 	vec3 half_vector = normalize(LIGHT + VIEW);
+	float lean_spec = 1.0;
 
 	// Specular
 	float spec = clamp(pow(dot(NORMAL, half_vector), specular_power), 0.0, 1.0) * specular_strength;
+	if(lean_mapping){
+		//LEAN Mapping implementation
+
+		//Calculate "h" in from his implementation
+		vec3 half_vec = normalize(VIEW + LIGHT);
+
+		//get lean textures at the right positions
+		vec2 lean_uv = world_vertex.xz * uv_scale;
+		vec2 B = texture(lean_B_texture, lean_uv).xy;
+		vec3 M = texture(lean_M_texture, lean_uv).xyz;
+		vec3 N = lean_mapping_tiled_normal(lean_uv);
+		// NORMAL= N;
+
+		//cov + det
+		vec3 cov_matrix = M - vec3(B.x*B.x - 1.0/2.0, B.y*B.y, B.x*B.y / 1.0/2.0);
+		float det = cov_matrix.x * cov_matrix.y - cov_matrix.z * cov_matrix.z;
+
+		//specular term
+		vec2 h_bar = half_vec.xy / half_vec.z - B;
+		float e = (h_bar.x*h_bar.x*cov_matrix.y + h_bar.y*h_bar.y*cov_matrix.x - 2.0*h_bar.x*h_bar.y*cov_matrix.z);
+
+		//convert
+		if(det > 0.0){
+		    float lean_specular = exp(-0.5 * e / sqrt(det));
+			spec = lean_specular;
+		}
+	}
 	SPECULAR_LIGHT += (LIGHT_COLOR * ALBEDO * ATTENUATION / PI) * clamp(dot(NORMAL, half_vector), 0.0, 1.0) * foam_specular_factor;
 	SPECULAR_LIGHT += LIGHT_COLOR * ATTENUATION * spec * foam_specular_factor;
 
