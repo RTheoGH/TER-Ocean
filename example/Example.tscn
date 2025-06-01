@@ -226,7 +226,7 @@ process_material = SubResource("ShaderMaterial_gc8pj")
 draw_pass_1 = SubResource("QuadMesh_g2dg2")
 
 [node name="Camera3D" type="Camera3D" parent="." node_paths=PackedStringArray("reflection_probe")]
-transform = Transform3D(-0.48786, -0.269748, 0.830198, 0, 0.951056, 0.309017, -0.872923, 0.150757, -0.463982, 0, 500, 0)
+transform = Transform3D(-0.194235, -0.303132, 0.932944, 0, 0.951056, 0.309017, -0.980956, 0.0600217, -0.184728, 0, 500, 0)
 current = true
 near = 1.0
 far = 16000.0
@@ -250,6 +250,7 @@ light_energy = 0.5
 
 [node name="DirectionalLight3D_Sky" type="DirectionalLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 2.5, 0)
+visible = false
 light_energy = 2.5
 
 [node name="CanvasLayer" type="CanvasLayer" parent="." node_paths=PackedStringArray("ocean", "free_camera")]
@@ -264,6 +265,7 @@ offset_bottom = 40.0
 expand_mode = 1
 
 [node name="DebugTextureRect1" type="TextureRect" parent="CanvasLayer"]
+visible = false
 custom_minimum_size = Vector2(256, 256)
 offset_left = 256.0
 offset_right = 512.0
@@ -271,6 +273,7 @@ offset_bottom = 256.0
 expand_mode = 1
 
 [node name="DebugTextureRect2" type="TextureRect" parent="CanvasLayer"]
+visible = false
 custom_minimum_size = Vector2(256, 256)
 offset_top = 256.0
 offset_right = 256.0
@@ -278,6 +281,7 @@ offset_bottom = 512.0
 expand_mode = 1
 
 [node name="DebugTextureRect3" type="TextureRect" parent="CanvasLayer"]
+visible = false
 custom_minimum_size = Vector2(256, 256)
 offset_left = 256.0
 offset_top = 256.0
